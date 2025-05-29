@@ -14,7 +14,13 @@ import {
   refreshTokenApi
 } from "@/api/user";
 import { useMultiTagsStoreHook } from "./multiTags";
-import { type DataInfo, setToken, removeToken, userKey } from "@/utils/auth";
+import {
+  type DataInfo,
+  setToken,
+  getToken,
+  removeToken,
+  userKey
+} from "@/utils/auth";
 
 export const useUserStore = defineStore("pure-user", {
   state: (): userType => ({
@@ -66,9 +72,19 @@ export const useUserStore = defineStore("pure-user", {
     /** 登入 */
     async loginByUsername(data) {
       return new Promise<UserResult>((resolve, reject) => {
-        getLogin(data)
+        getLogin({
+          identifier: data.identifier,
+          password: data.password
+        })
           .then(data => {
-            if (data?.success) setToken(data.data);
+            if (data?.success) {
+              // 设置令牌信息，包括访问令牌、刷新令牌和过期时间
+              setToken({
+                accessToken: data.data.access_token,
+                refreshToken: data.data.refresh_token,
+                expires: new Date(data.data.access_token_expires_at * 1000) // 转换为毫秒时间戳
+              });
+            }
             resolve(data);
           })
           .catch(error => {
@@ -91,10 +107,16 @@ export const useUserStore = defineStore("pure-user", {
       return new Promise<RefreshTokenResult>((resolve, reject) => {
         refreshTokenApi(data)
           .then(data => {
-            if (data) {
-              setToken(data.data);
-              resolve(data);
+            if (data?.success) {
+              // 更新访问令牌信息，保留原有的刷新令牌
+              const currentRefreshToken = getToken()?.refreshToken;
+              setToken({
+                accessToken: data.data.access_token,
+                refreshToken: currentRefreshToken, // 保留原有的刷新令牌
+                expires: new Date(data.data.access_token_expires_at * 1000) // 转换为毫秒时间戳
+              });
             }
+            resolve(data);
           })
           .catch(error => {
             reject(error);

@@ -6,9 +6,9 @@ export interface DataInfo<T> {
   /** token */
   accessToken: string;
   /** `accessToken`的过期时间（时间戳） */
-  expires: T;
+  expires?: T; // Making expires optional as it's not in the new API response
   /** 用于调用刷新accessToken的接口时所需的token */
-  refreshToken: string;
+  refreshToken?: string; // Making refreshToken optional
   /** 头像 */
   avatar?: string;
   /** 用户名 */
@@ -40,79 +40,85 @@ export function getToken(): DataInfo<number> {
 }
 
 /**
- * @description 设置`token`以及一些必要信息并采用无感刷新`token`方案
- * 无感刷新：后端返回`accessToken`（访问接口使用的`token`）、`refreshToken`（用于调用刷新`accessToken`的接口时所需的`token`，`refreshToken`的过期时间（比如30天）应大于`accessToken`的过期时间（比如2小时））、`expires`（`accessToken`的过期时间）
- * 将`accessToken`、`expires`、`refreshToken`这三条信息放在key值为authorized-token的cookie里（过期自动销毁）
- * 将`avatar`、`username`、`nickname`、`roles`、`permissions`、`refreshToken`、`expires`这七条信息放在key值为`user-info`的localStorage里（利用`multipleTabsKey`当浏览器完全关闭后自动销毁）
+ * @description 设置`token`以及一些必要信息
+ * 新版API：登录接口只返回`accessToken`，刷新令牌功能需要单独实现
+ * 将`accessToken`信息放在key值为authorized-token的cookie里
+ * 将用户相关信息放在key值为`user-info`的localStorage里（利用`multipleTabsKey`当浏览器完全关闭后自动销毁）
  */
-export function setToken(data: DataInfo<Date>) {
-  let expires = 0;
-  const { accessToken, refreshToken } = data;
+export function setToken(data: Partial<DataInfo<Date>>) {
+  const {
+    accessToken,
+    expires,
+    refreshToken,
+    username,
+    roles,
+    permissions,
+    avatar,
+    nickname
+  } = data;
   const { isRemembered, loginDay } = useUserStoreHook();
-  expires = new Date(data.expires).getTime(); // 如果后端直接设置时间戳，将此处代码改为expires = data.expires，然后把上面的DataInfo<Date>改成DataInfo<number>即可
-  const cookieString = JSON.stringify({ accessToken, expires, refreshToken });
 
-  expires > 0
-    ? Cookies.set(TokenKey, cookieString, {
-        expires: (expires - Date.now()) / 86400000
-      })
-    : Cookies.set(TokenKey, cookieString);
-
-  Cookies.set(
-    multipleTabsKey,
-    "true",
-    isRemembered
-      ? {
-          expires: loginDay
-        }
-      : {}
-  );
-
-  function setUserKey({ avatar, username, nickname, roles, permissions }) {
-    useUserStoreHook().SET_AVATAR(avatar);
-    useUserStoreHook().SET_USERNAME(username);
-    useUserStoreHook().SET_NICKNAME(nickname);
-    useUserStoreHook().SET_ROLES(roles);
-    useUserStoreHook().SET_PERMS(permissions);
-    storageLocal().setItem(userKey, {
-      refreshToken,
-      expires,
-      avatar,
-      username,
-      nickname,
-      roles,
-      permissions
-    });
+  // 处理过期时间
+  let newExpires = 0;
+  if (expires) {
+    if (typeof expires === "string") {
+      newExpires = new Date(expires).getTime();
+    } else if (expires instanceof Date) {
+      newExpires = expires.getTime();
+    } else if (typeof expires === "number") {
+      newExpires = expires;
+    }
   }
 
-  if (data.username && data.roles) {
-    const { username, roles } = data;
-    setUserKey({
-      avatar: data?.avatar ?? "",
-      username,
-      nickname: data?.nickname ?? "",
-      roles,
-      permissions: data?.permissions ?? []
+  // 构建cookie数据（主要存储token信息）
+  const cookieData: Partial<DataInfo<number>> = { accessToken };
+  if (newExpires > 0) cookieData.expires = newExpires;
+  if (refreshToken) cookieData.refreshToken = refreshToken;
+
+  const cookieString = JSON.stringify(cookieData);
+
+  // 设置cookie，如果有过期时间则使用，否则使用会话cookie
+  let cookieExpires = 2 / 24; // 默认2小时
+  if (isRemembered && loginDay && loginDay > 0) {
+    cookieExpires = loginDay;
+  } else if (newExpires > 0) {
+    cookieExpires = (newExpires - Date.now()) / 86400000;
+  }
+  if (newExpires > 0) {
+    Cookies.set(TokenKey, cookieString, {
+      expires: cookieExpires
     });
   } else {
-    const avatar =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.avatar ?? "";
-    const username =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.username ?? "";
-    const nickname =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.nickname ?? "";
-    const roles =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.roles ?? [];
-    const permissions =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.permissions ?? [];
-    setUserKey({
-      avatar,
-      username,
-      nickname,
-      roles,
-      permissions
+    // 如果没有明确的过期时间，设置默认的会话时长（比如2小时）
+    const defaultExpires = Date.now() + 2 * 60 * 60 * 1000; // 2小时
+    cookieData.expires = defaultExpires;
+    Cookies.set(TokenKey, JSON.stringify(cookieData), {
+      expires: cookieExpires
     });
   }
+
+  Cookies.set(multipleTabsKey, JSON.stringify(cookieData), {
+    expires: cookieExpires
+  });
+
+  // 构建本地存储数据（存储用户信息）
+  const localData: Partial<DataInfo<number>> = { accessToken };
+  if (cookieData.expires) localData.expires = cookieData.expires;
+  if (refreshToken) localData.refreshToken = refreshToken;
+  if (username) localData.username = username;
+  if (roles) localData.roles = roles;
+  if (permissions) localData.permissions = permissions;
+  if (avatar) localData.avatar = avatar;
+  if (nickname) localData.nickname = nickname;
+
+  storageLocal().setItem(userKey, localData);
+
+  // 更新store中的用户信息
+  if (avatar) useUserStoreHook().SET_AVATAR(avatar);
+  if (username) useUserStoreHook().SET_USERNAME(username);
+  if (nickname) useUserStoreHook().SET_NICKNAME(nickname);
+  if (roles) useUserStoreHook().SET_ROLES(roles);
+  if (permissions) useUserStoreHook().SET_PERMS(permissions);
 }
 
 /** 删除`token`以及key值为`user-info`的localStorage信息 */

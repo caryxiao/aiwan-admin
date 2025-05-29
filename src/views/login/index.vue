@@ -44,8 +44,10 @@ const { title, getDropdownItemStyle, getDropdownItemClass } = useNav();
 const { locale, translationCh, translationEn } = useTranslationLang();
 
 const ruleForm = reactive({
-  username: "admin",
-  password: "admin123"
+  identifier: "admin",
+  password: "admin123",
+  isRemembered: false,
+  loginDay: 7
 });
 
 const onLogin = async (formEl: FormInstance | undefined) => {
@@ -53,9 +55,11 @@ const onLogin = async (formEl: FormInstance | undefined) => {
   await formEl.validate(valid => {
     if (valid) {
       loading.value = true;
+      useUserStoreHook().SET_ISREMEMBERED(ruleForm.isRemembered);
+      useUserStoreHook().SET_LOGINDAY(ruleForm.loginDay);
       useUserStoreHook()
         .loginByUsername({
-          username: ruleForm.username,
+          identifier: ruleForm.identifier,
           password: ruleForm.password
         })
         .then(res => {
@@ -166,10 +170,10 @@ useEventListener(document, "keydown", ({ code }) => {
                     trigger: 'blur'
                   }
                 ]"
-                prop="username"
+                prop="identifier"
               >
                 <el-input
-                  v-model="ruleForm.username"
+                  v-model="ruleForm.identifier"
                   clearable
                   :placeholder="t('login.pureUsername')"
                   :prefix-icon="useRenderIcon(User)"
@@ -189,6 +193,24 @@ useEventListener(document, "keydown", ({ code }) => {
               </el-form-item>
             </Motion>
 
+            <Motion :delay="200">
+              <el-form-item>
+                <el-checkbox v-model="ruleForm.isRemembered"
+                  >记住我</el-checkbox
+                >
+                <el-select
+                  v-model="ruleForm.loginDay"
+                  style="width: 120px; margin-left: 16px"
+                >
+                  <el-option
+                    v-for="day in [1, 3, 7, 15, 30]"
+                    :key="day"
+                    :label="`${day}天`"
+                    :value="day"
+                  />
+                </el-select>
+              </el-form-item>
+            </Motion>
             <Motion :delay="250">
               <el-button
                 class="w-full mt-4!"

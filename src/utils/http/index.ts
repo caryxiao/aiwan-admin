@@ -11,11 +11,12 @@ import type {
 } from "./types.d";
 import { stringify } from "qs";
 import NProgress from "../progress";
-import { getToken, formatToken } from "@/utils/auth";
+import { getToken, formatToken, setToken } from "@/utils/auth";
 import { useUserStoreHook } from "@/store/modules/user";
 
 // 相关配置请参考：www.axios-js.com/zh-cn/docs/#axios-request-config-1
 const defaultConfig: AxiosRequestConfig = {
+  // baseURL: import.meta.env.VITE_API_BASE_URL,
   // 请求超时时间
   timeout: 10000,
   headers: {
@@ -73,7 +74,7 @@ class PureHttp {
           return config;
         }
         /** 请求白名单，放置一些不需要`token`的接口（通过设置请求白名单，防止`token`过期后再请求造成的死循环问题） */
-        const whiteList = ["/refresh-token", "/login"];
+        const whiteList = ["/api/auth/refresh-token", "/api/auth/login"];
         return whiteList.some(url => config.url.endsWith(url))
           ? config
           : new Promise(resolve => {
@@ -82,20 +83,43 @@ class PureHttp {
                 const now = new Date().getTime();
                 const expired = parseInt(data.expires) - now <= 0;
                 if (expired) {
-                  if (!PureHttp.isRefreshing) {
+                  // 如果token过期且有refreshToken，尝试刷新
+                  if (data.refreshToken && !PureHttp.isRefreshing) {
                     PureHttp.isRefreshing = true;
                     // token过期刷新
                     useUserStoreHook()
-                      .handRefreshToken({ refreshToken: data.refreshToken })
+                      .handRefreshToken({ refresh_token: data.refreshToken })
                       .then(res => {
-                        const token = res.data.accessToken;
-                        config.headers["Authorization"] = formatToken(token);
-                        PureHttp.requests.forEach(cb => cb(token));
-                        PureHttp.requests = [];
+                        if (res?.success) {
+                          const token = res.data.access_token;
+                          // 更新token信息
+                          setToken({
+                            accessToken: res.data.access_token,
+                            refreshToken: data.refreshToken, // 保留原有的刷新令牌
+                            expires: new Date(
+                              res.data.access_token_expires_at * 1000
+                            )
+                          });
+                          config.headers["Authorization"] = formatToken(token);
+                          PureHttp.requests.forEach(cb => cb(token));
+                          PureHttp.requests = [];
+                        } else {
+                          // 刷新失败，跳转到登录页
+                          useUserStoreHook().logOut();
+                        }
+                      })
+                      .catch(() => {
+                        // 刷新失败，跳转到登录页
+                        useUserStoreHook().logOut();
                       })
                       .finally(() => {
                         PureHttp.isRefreshing = false;
                       });
+                  } else if (!data.refreshToken) {
+                    // 没有refreshToken，直接跳转到登录页
+                    useUserStoreHook().logOut();
+                    resolve(config);
+                    return;
                   }
                   resolve(PureHttp.retryOriginalRequest(config));
                 } else {
