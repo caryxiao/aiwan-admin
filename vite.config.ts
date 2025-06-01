@@ -23,7 +23,6 @@ export default ({ mode }: ConfigEnv): UserConfigExport => {
     resolve: {
       alias
     },
-    // 服务端渲染
     server: {
       // 端口号
       port: VITE_PORT,

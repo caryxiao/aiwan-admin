@@ -10,8 +10,10 @@ import {
 import {
   type UserResult,
   type RefreshTokenResult,
+  type CurrentUserResult,
   getLogin,
-  refreshTokenApi
+  refreshTokenApi,
+  getCurrentUser
 } from "@/api/user";
 import { useMultiTagsStoreHook } from "./multiTags";
 import {
@@ -76,14 +78,50 @@ export const useUserStore = defineStore("pure-user", {
           identifier: data.identifier,
           password: data.password
         })
-          .then(data => {
-            if (data?.success) {
+          .then(async loginData => {
+            if (loginData?.success) {
               // 设置令牌信息，包括访问令牌、刷新令牌和过期时间
               setToken({
-                accessToken: data.data.access_token,
-                refreshToken: data.data.refresh_token,
-                expires: new Date(data.data.access_token_expires_at * 1000) // 转换为毫秒时间戳
+                accessToken: loginData.data.access_token,
+                refreshToken: loginData.data.refresh_token,
+                expires: new Date(loginData.data.access_token_expires_at * 1000) // 转换为毫秒时间戳
               });
+
+              // 登录成功后获取用户信息
+              try {
+                await this.getUserInfo();
+              } catch (error) {
+                console.error("获取用户信息失败:", error);
+              }
+            }
+            resolve(loginData);
+          })
+          .catch(error => {
+            reject(error);
+          });
+      });
+    },
+    /** 获取当前用户信息 */
+    async getUserInfo() {
+      return new Promise<CurrentUserResult>((resolve, reject) => {
+        getCurrentUser()
+          .then(data => {
+            if (data?.success) {
+              // 更新用户信息到store和localStorage
+              this.SET_USERNAME(data.data.username);
+              this.SET_NICKNAME(data.data.full_name || data.data.username);
+              this.SET_ROLES(data.data.roles);
+              this.SET_PERMS(data.data.permissions);
+
+              // 更新localStorage中的用户信息
+              const currentToken = getToken();
+              setToken({
+                ...currentToken,
+                username: data.data?.username,
+                nickname: data.data?.full_name || data.data?.username,
+                roles: data.data?.roles,
+                permissions: data.data?.permissions
+              } as any);
             }
             resolve(data);
           })

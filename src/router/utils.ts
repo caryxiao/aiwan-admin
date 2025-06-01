@@ -2,6 +2,7 @@ import {
   type RouterHistory,
   type RouteRecordRaw,
   type RouteComponent,
+  type RouteRecordRedirectOption,
   createWebHistory,
   createWebHashHistory
 } from "vue-router";
@@ -19,6 +20,7 @@ import {
 import { getConfig } from "@/config";
 import { buildHierarchyTree } from "@/utils/tree";
 import { userKey, type DataInfo } from "@/utils/auth";
+import { useUserStoreHook } from "@/store/modules/user";
 import { type menuType, routerArrays } from "@/layout/types";
 import { useMultiTagsStoreHook } from "@/store/modules/multiTags";
 import { usePermissionStoreHook } from "@/store/modules/permission";
@@ -28,6 +30,8 @@ const modulesRoutes = import.meta.glob("/src/views/**/*.{vue,tsx}");
 
 // 动态路由
 import { getAsyncRoutes } from "@/api/routes";
+import { transformMenusToRoutes, buildMenuTree } from "@/utils/dynamicRoutes";
+import type { AdminMenuTreeItem } from "@/api/routes";
 
 function handRank(routeInfo: any) {
   const { name, path, parentId, meta } = routeInfo;
@@ -43,7 +47,10 @@ function handRank(routeInfo: any) {
 function ascending(arr: any[]) {
   arr.forEach((v, index) => {
     // 当rank不存在时，根据顺序自动创建，首页路由永远在第一位
-    if (handRank(v)) v.meta.rank = index + 2;
+    if (handRank(v)) {
+      if (!v.meta) v.meta = {};
+      v.meta.rank = index + 2;
+    }
   });
   return arr.sort(
     (a: { meta: { rank: number } }, b: { meta: { rank: number } }) => {
@@ -150,35 +157,90 @@ function addPathMatch() {
 }
 
 /** 处理动态路由（后端返回的路由） */
-function handleAsyncRoutes(routeList) {
+function handleAsyncRoutes(routeList: any[]) {
+  // console.log(
+  //   "handleAsyncRoutes - 接收到的原始路由数据 (routeList):",
+  //   JSON.stringify(cloneDeep(routeList), null, 2)
+  // // );
+  // console.log("handleAsyncRoutes - 接收到的路由数据:", routeList);
+
   if (routeList.length === 0) {
+    console.log("路由数据为空");
     usePermissionStoreHook().handleWholeMenus(routeList);
   } else {
-    formatFlatteningRoutes(addAsyncRoutes(routeList)).map(
-      (v: RouteRecordRaw) => {
-        // 防止重复添加路由
-        if (
-          router.options.routes[0].children.findIndex(
-            value => value.path === v.path
-          ) !== -1
-        ) {
-          return;
-        } else {
-          // 切记将路由push到routes后还需要使用addRoute，这样路由才能正常跳转
-          router.options.routes[0].children.push(v);
-          // 最终路由进行升序
-          ascending(router.options.routes[0].children);
-          if (!router.hasRoute(v?.name)) router.addRoute(v);
-          const flattenRouters: any = router
-            .getRoutes()
-            .find(n => n.path === "/");
-          // 保持router.options.routes[0].children与path为"/"的children一致，防止数据不一致导致异常
-          flattenRouters.children = router.options.routes[0].children;
-          router.addRoute(flattenRouters);
-        }
-      }
+    // 如果routeList是菜单数据，需要先转换为路由格式
+    let processedRoutes = routeList;
+
+    // 检查是否是菜单数据格式（包含menu_type字段）
+    if (routeList[0] && routeList[0].menu_type) {
+      console.log("检测到菜单数据格式，开始转换为路由格式...");
+      // 构建菜单树
+      const menuTree = buildMenuTree(routeList as AdminMenuTreeItem[]);
+      console.log(
+        "构建的菜单树 (menuTree):",
+        JSON.stringify(cloneDeep(menuTree), null, 2)
+      );
+      // 转换为路由格式
+      processedRoutes = transformMenusToRoutes(menuTree);
+      console.log(
+        "转换后的路由数据 (processedRoutes):",
+        JSON.stringify(cloneDeep(processedRoutes), null, 2)
+      );
+    }
+
+    console.log(
+      "最终准备添加到 router 的路由数据 (树形 processedRoutes):",
+      JSON.stringify(cloneDeep(processedRoutes), null, 2)
     );
-    usePermissionStoreHook().handleWholeMenus(routeList);
+
+    // 将处理后的路由添加到路由表中
+    // 注意：这里我们假设所有动态获取的路由都应作为 "Home" 路由的子路由
+    // 如果你的应用有不同的结构，例如多个顶级动态路由，需要调整此处的逻辑
+    console.log("开始将处理后的路由添加到路由表...");
+    processedRoutes.forEach((route: RouteRecordRaw) => {
+      if (route.name && !router.hasRoute(route.name)) {
+        try {
+          router.addRoute(route); // 直接添加路由，由Vue Router根据定义处理层级
+          console.log(
+            `成功添加路由 ${route.path || "unknown"}:`,
+            JSON.stringify(cloneDeep(route), null, 2)
+          );
+        } catch (e) {
+          console.error(
+            `添加路由 ${route.path || "unknown"} 失败:`,
+            e,
+            JSON.stringify(cloneDeep(route), null, 2)
+          );
+        }
+      } else if (!route.name) {
+        console.warn(
+          `路由 ${route.path || "unknown"} 没有名称，无法检查是否已存在或添加，已跳过。`,
+          JSON.stringify(cloneDeep(route), null, 2)
+        );
+      } else {
+        console.log(
+          `路由 ${String(route.name)} (${route.path || "unknown"}) 已存在，跳过添加。`,
+          JSON.stringify(cloneDeep(route), null, 2)
+        );
+      }
+    });
+    console.log("所有动态路由添加完成。");
+
+    // 将扁平化后的路由处理后传递给 usePermissionStoreHook().handleWholeMenus
+    // 将具有层级结构的路由数据传递给 store，而不是扁平化的
+    console.log(
+      "准备传递给 store 的层级路由 (processedRoutes):",
+      JSON.stringify(cloneDeep(processedRoutes), null, 2)
+    );
+    usePermissionStoreHook().handleWholeMenus(processedRoutes);
+    console.log(
+      "路由处理完成，当前所有路由:",
+      router.getRoutes().map(r => ({
+        path: r.path,
+        name: r.name,
+        children: r.children?.map(c => ({ path: c.path, name: c.name }))
+      }))
+    );
   }
   if (!useMultiTagsStoreHook().getMultiTagsCache) {
     useMultiTagsStoreHook().handleTags("equal", [
@@ -192,32 +254,76 @@ function handleAsyncRoutes(routeList) {
 }
 
 /** 初始化路由（`new Promise` 写法防止在异步请求中造成无限循环）*/
-function initRouter() {
-  if (getConfig()?.CachingAsyncRoutes) {
-    // 开启动态路由缓存本地localStorage
-    const key = "async-routes";
-    const asyncRouteList = storageLocal().getItem(key) as any;
-    if (asyncRouteList && asyncRouteList?.length > 0) {
-      return new Promise(resolve => {
-        handleAsyncRoutes(asyncRouteList);
-        resolve(router);
-      });
+export const initRouter = () => {
+  return new Promise<any>(resolve => {
+    // 检查用户是否已登录且有角色信息
+    const userInfo = storageLocal().getItem(userKey) as DataInfo<number>;
+    console.log("initRouter - 用户信息:", userInfo);
+
+    if (
+      userInfo?.accessToken &&
+      (!userInfo.roles || userInfo.roles.length === 0)
+    ) {
+      // 用户已登录但缺少角色信息，先获取用户信息
+      console.log("用户已登录但缺少角色信息，正在获取用户信息...");
+      useUserStoreHook()
+        .getUserInfo()
+        .then(() => {
+          // 获取用户信息后继续处理路由
+          proceedWithRouteInit(resolve);
+        })
+        .catch(error => {
+          console.error("获取用户信息失败:", error);
+          proceedWithRouteInit(resolve);
+        });
     } else {
-      return new Promise(resolve => {
-        getAsyncRoutes().then(({ data }) => {
-          handleAsyncRoutes(cloneDeep(data));
-          storageLocal().setItem(key, data);
+      proceedWithRouteInit(resolve);
+    }
+  });
+};
+
+function proceedWithRouteInit(resolve: (value: any) => void) {
+  console.log("开始处理路由初始化...");
+  if (getConfig()?.CachingAsyncRoutes) {
+    // 从缓存中获取路由
+    const asyncRouteList =
+      storageLocal().getItem<DataInfo<number>>("async-routes") || [];
+    console.log("缓存的路由数据:", asyncRouteList);
+
+    if (!Array.isArray(asyncRouteList) || asyncRouteList.length === 0) {
+      // 缓存为空，从服务器获取
+      console.log("缓存为空，从服务器获取菜单数据...");
+      getAsyncRoutes()
+        .then(apiResponse => {
+          console.log("从服务器获取到的菜单数据:", apiResponse);
+          const menuData = apiResponse.data || [];
+          handleAsyncRoutes(menuData);
+          storageLocal().setItem("async-routes", menuData);
+          resolve(router);
+        })
+        .catch(error => {
+          console.error("获取异步路由失败:", error);
           resolve(router);
         });
-      });
+    } else {
+      console.log("使用缓存的路由数据");
+      handleAsyncRoutes(asyncRouteList);
+      resolve(router);
     }
   } else {
-    return new Promise(resolve => {
-      getAsyncRoutes().then(({ data }) => {
-        handleAsyncRoutes(cloneDeep(data));
+    // 每次都从服务器获取最新路由
+    console.log("每次都从服务器获取最新路由...");
+    getAsyncRoutes()
+      .then(apiResponse => {
+        console.log("从服务器获取到的菜单数据:", apiResponse);
+        const menuData = apiResponse.data || [];
+        handleAsyncRoutes(menuData);
+        resolve(router);
+      })
+      .catch(error => {
+        console.error("获取异步路由失败:", error);
         resolve(router);
       });
-    });
   }
 }
 
@@ -254,7 +360,7 @@ function formatTwoStageRoutes(routesList: RouteRecordRaw[]) {
         component: v.component,
         name: v.name,
         path: v.path,
-        redirect: v.redirect,
+        redirect: v.redirect as unknown as RouteRecordRedirectOption,
         meta: v.meta,
         children: []
       });
@@ -302,14 +408,14 @@ function handleAliveRoute({ name }: ToRouteType, mode?: string) {
 
 /** 过滤后端传来的动态路由 重新生成规范路由 */
 function addAsyncRoutes(arrRoutes: Array<RouteRecordRaw>) {
-  if (!arrRoutes || !arrRoutes.length) return;
+  if (!arrRoutes || !arrRoutes.length) return [];
   const modulesRoutesKeys = Object.keys(modulesRoutes);
   arrRoutes.forEach((v: RouteRecordRaw) => {
     // 将backstage属性加入meta，标识此路由为后端返回路由
     v.meta.backstage = true;
     // 父级的redirect属性取值：如果子级存在且父级的redirect属性不存在，默认取第一个子级的path；如果子级存在且父级的redirect属性存在，取存在的redirect属性，会覆盖默认值
     if (v?.children && v.children.length && !v.redirect)
-      v.redirect = v.children[0].path;
+      v.redirect = v.children[0].path as unknown as RouteRecordRedirectOption;
     // 父级的name属性取值：如果子级存在且父级的name属性不存在，默认取第一个子级的name；如果子级存在且父级的name属性存在，取存在的name属性，会覆盖默认值（注意：测试中发现父级的name不能和子级name重复，如果重复会造成重定向无效（跳转404），所以这里给父级的name起名的时候后面会自动加上`Parent`，避免重复）
     if (v?.children && v.children.length && !v.name)
       v.name = (v.children[0].name as string) + "Parent";
@@ -383,9 +489,22 @@ function handleTopMenu(route) {
 
 /** 获取所有菜单中的第一个菜单（顶级菜单）*/
 function getTopMenu(tag = false): menuType {
-  const topMenu = handleTopMenu(
-    usePermissionStoreHook().wholeMenus[0]?.children[0]
-  );
+  const wholeMenus = usePermissionStoreHook().wholeMenus;
+  if (
+    !wholeMenus ||
+    wholeMenus.length === 0 ||
+    !wholeMenus[0]?.children ||
+    wholeMenus[0].children.length === 0
+  ) {
+    // 返回默认的首页路由
+    return { path: "/welcome", meta: { title: "首页" }, value: null };
+  }
+
+  const topMenu = handleTopMenu(wholeMenus[0].children[0]);
+  if (!topMenu) {
+    return { path: "/welcome", meta: { title: "首页" }, value: null };
+  }
+
   tag && useMultiTagsStoreHook().handleTags("push", topMenu);
   return topMenu;
 }
@@ -395,7 +514,6 @@ export {
   getAuths,
   ascending,
   filterTree,
-  initRouter,
   getTopMenu,
   addPathMatch,
   isOneOfArray,

@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { cloneDeep } from "lodash-es";
 import {
   type cacheType,
   store,
@@ -26,12 +27,26 @@ export const usePermissionStore = defineStore("pure-permission", {
   actions: {
     /** 组装整体路由生成的菜单 */
     handleWholeMenus(routes: any[]) {
-      this.wholeMenus = filterNoPermissionTree(
+      console.log(
+        "handleWholeMenus - 接收到的路由 (routes):",
+        JSON.stringify(cloneDeep(routes), null, 2)
+      );
+      const filteredNoPermissionTree = filterNoPermissionTree(
         filterTree(ascending(this.constantMenus.concat(routes)))
       );
-      this.flatteningRoutes = formatFlatteningRoutes(
+      console.log(
+        "handleWholeMenus - 过滤无权限和 showLink 为 false 后的树 (filteredNoPermissionTree):",
+        JSON.stringify(cloneDeep(filteredNoPermissionTree), null, 2)
+      );
+      this.wholeMenus = filteredNoPermissionTree;
+      const newFlatteningRoutes = formatFlatteningRoutes(
         this.constantMenus.concat(routes) as any
       );
+      console.log(
+        "handleWholeMenus - 扁平化后的路由 (newFlatteningRoutes):",
+        JSON.stringify(cloneDeep(newFlatteningRoutes), null, 2)
+      );
+      this.flatteningRoutes = newFlatteningRoutes;
     },
     cacheOperate({ mode, name }: cacheType) {
       const delIndex = this.cachePageList.findIndex(v => v === name);
