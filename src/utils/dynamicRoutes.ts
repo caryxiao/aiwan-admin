@@ -31,7 +31,9 @@ export function transformMenusToRoutes(
         hiddenTag: menu.meta?.hidden_tag,
         dynamicLevel: menu.meta?.dynamic_level,
         activePath: menu.meta?.active_path,
-        authority: menu.meta?.authority
+        authority: menu.meta?.authority,
+        // 将authority转换为auths，用于按钮权限判断
+        auths: menu.meta?.authority || []
       }
     };
 

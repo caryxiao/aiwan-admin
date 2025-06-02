@@ -28,6 +28,11 @@ export interface AssignPermissionsToRolePayload {
   permission_ids: string[];
 }
 
+// 新的权限分配载荷类型（使用permission_key）
+export interface AssignPermissionKeysToRolePayload {
+  permission_keys: string[];
+}
+
 // 角色管理API
 export const getAdminRoles = (params?: {
   page?: number;
@@ -92,5 +97,25 @@ export const updateRolePermissions = (
     "put",
     `/api/v1/roles/${roleId}/permissions`,
     { data }
+  );
+};
+
+// 使用permission_keys的新权限分配API（基于最新API文档）
+export const assignPermissionKeysToRole = (
+  roleId: string,
+  data: AssignPermissionKeysToRolePayload
+) => {
+  return http.request<ApiResponse<null>>(
+    "post",
+    `/api/v1/roles/${roleId}/permissions`,
+    { data }
+  );
+};
+
+// 获取角色权限键列表（基于最新API文档）
+export const getRolePermissionKeys = (roleId: string) => {
+  return http.request<ApiResponse<string[]>>(
+    "get",
+    `/api/v1/roles/${roleId}/permissions`
   );
 };

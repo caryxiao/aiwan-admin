@@ -53,7 +53,7 @@
           <span class="card-title">权限定义管理</span>
           <div class="card-actions">
             <el-button
-              v-auth="'admin:permissions:create'"
+              v-auth="'permissions:create'"
               type="primary"
               @click="handleOpenCreateDialog"
             >
@@ -63,7 +63,7 @@
               新增权限
             </el-button>
             <el-button
-              v-auth="'admin:permissions:delete'"
+              v-auth="'permissions:delete'"
               type="danger"
               :disabled="!hasSelection"
               @click="handleBatchDelete"
@@ -131,7 +131,7 @@
         <el-table-column label="操作" width="200" align="center" fixed="right">
           <template #default="{ row }">
             <el-button
-              v-auth="'admin:permissions:update'"
+              v-auth="'permissions:update'"
               type="primary"
               size="small"
               link
@@ -143,7 +143,7 @@
               编辑
             </el-button>
             <el-button
-              v-auth="'admin:permissions:delete'"
+              v-auth="'permissions:delete'"
               type="danger"
               size="small"
               link

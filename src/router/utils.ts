@@ -14,8 +14,8 @@ import {
   cloneDeep,
   isAllEmpty,
   intersection,
-  storageLocal,
-  isIncludeAllChildren
+  storageLocal
+  // isIncludeAllChildren
 } from "@pureadmin/utils";
 import { getConfig } from "@/config";
 import { buildHierarchyTree } from "@/utils/tree";
@@ -463,16 +463,68 @@ function getAuths(): Array<string> {
   return router.currentRoute.value.meta.auths as Array<string>;
 }
 
+/** 检查权限是否匹配（支持通配符） */
+function checkPermissionMatch(
+  requiredPermission: string,
+  userPermissions: Array<string>
+): boolean {
+  // 直接匹配
+  if (userPermissions.includes(requiredPermission)) {
+    return true;
+  }
+
+  // 检查通配符权限
+  for (const permission of userPermissions) {
+    if (permission === "*:*") {
+      // 超级管理员权限，允许所有操作
+      return true;
+    }
+
+    if (permission.includes("*")) {
+      // 处理通配符权限
+      const permissionPattern = permission.replace(/\*/g, ".*");
+      const regex = new RegExp(`^${permissionPattern}$`);
+      if (regex.test(requiredPermission)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 /** 是否有按钮级别的权限（根据路由`meta`中的`auths`字段进行判断）*/
 function hasAuth(value: string | Array<string>): boolean {
   if (!value) return false;
+
+  // 获取用户的所有权限（从用户信息中获取）
+  const userStore = useUserStoreHook();
+  const userPermissions = userStore.permissions || [];
+
+  // 如果用户有超级管理员权限，直接返回true
+  if (userPermissions.includes("*:*")) {
+    return true;
+  }
+
   /** 从当前路由的`meta`字段里获取按钮级别的所有自定义`code`值 */
   const metaAuths = getAuths();
   if (!metaAuths) return false;
-  const isAuths = isString(value)
-    ? metaAuths.includes(value)
-    : isIncludeAllChildren(value, metaAuths);
-  return isAuths ? true : false;
+
+  // 检查所需权限
+  if (isString(value)) {
+    // 首先检查用户权限中是否直接包含所需权限
+    if (checkPermissionMatch(value, userPermissions)) {
+      return true;
+    }
+    // 然后检查路由meta中的权限
+    return metaAuths.includes(value);
+  } else {
+    // 数组权限，需要所有权限都满足
+    return value.every(
+      perm =>
+        checkPermissionMatch(perm, userPermissions) || metaAuths.includes(perm)
+    );
+  }
 }
 
 function handleTopMenu(route) {

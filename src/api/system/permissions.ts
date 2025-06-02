@@ -8,8 +8,32 @@ export interface PermissionCategory {
   display_name: string;
   description?: string | null;
   sort_order?: number | null;
+  parent_id?: string | null;
+  children?: PermissionCategory[];
   created_at: string;
   updated_at: string;
+}
+
+// 权限树节点类型（基于最新API文档）
+export interface PermissionCategoryNode {
+  category_id: string;
+  category_name: string;
+  category_parent_id?: string | null;
+  permissions: {
+    id: string;
+    permission_key: string;
+    display_name: string;
+  }[];
+  children_categories: PermissionCategoryNode[];
+}
+
+// 兼容性类型，用于前端树组件
+export interface PermissionTreeItem {
+  id: string;
+  permission_key?: string;
+  display_name: string;
+  children?: PermissionTreeItem[];
+  type: "category" | "permission";
 }
 
 export interface CreatePermissionCategoryRequest {
@@ -145,5 +169,20 @@ export const getDefinedPermission = (id: string) => {
   return http.request<ApiResponse<DefinedPermission>>(
     "get",
     `/api/v1/permissions/defined/${id}`
+  );
+};
+
+// 权限树响应类型（基于最新API文档）
+export interface PermissionTreeResponse {
+  tree: PermissionCategoryNode[];
+  total_categories: number;
+  total_permissions: number;
+}
+
+// 获取权限树（基于最新API文档）
+export const getPermissionTree = () => {
+  return http.request<ApiResponse<PermissionTreeResponse>>(
+    "get",
+    "/api/v1/permissions/defined/tree"
   );
 };

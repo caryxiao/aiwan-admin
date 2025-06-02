@@ -163,6 +163,51 @@ class PureHttp {
         $error.isCancelRequest = Axios.isCancel($error);
         // 关闭进度条动画
         NProgress.done();
+
+        // 统一处理HTTP错误
+        if (!$error.isCancelRequest && $error.response) {
+          const { status, data } = $error.response;
+
+          // 处理表单验证错误 (422)
+          if (status === 422 && data && data.errors) {
+            const errors = data.errors;
+            const errorMessages: string[] = [];
+
+            // 收集所有字段的错误信息
+            Object.keys(errors).forEach(field => {
+              if (Array.isArray(errors[field])) {
+                errors[field].forEach((msg: string) => {
+                  errorMessages.push(`${field}: ${msg}`);
+                });
+              } else {
+                errorMessages.push(`${field}: ${errors[field]}`);
+              }
+            });
+
+            // 显示错误信息
+            if (errorMessages.length > 0) {
+              // 动态导入ElMessage避免循环依赖
+              import("element-plus").then(({ ElMessage }) => {
+                ElMessage.error({
+                  message: errorMessages.join("\n"),
+                  duration: 5000,
+                  showClose: true
+                });
+              });
+            }
+          }
+          // 处理其他HTTP错误
+          else if (data && data.message) {
+            import("element-plus").then(({ ElMessage }) => {
+              ElMessage.error({
+                message: data.message,
+                duration: 3000,
+                showClose: true
+              });
+            });
+          }
+        }
+
         // 所有的响应异常 区分来源为取消请求/非取消请求
         return Promise.reject($error);
       }

@@ -37,7 +37,7 @@
           <span class="card-title">权限分类管理</span>
           <div class="card-actions">
             <el-button
-              v-auth="'admin:permission-categories:create'"
+              v-auth="'permission_categories:create'"
               type="primary"
               @click="handleOpenCreateDialog"
             >
@@ -47,7 +47,7 @@
               新增分类
             </el-button>
             <el-button
-              v-auth="'admin:permission-categories:delete'"
+              v-auth="'permission_categories:delete'"
               type="danger"
               :disabled="!hasSelection"
               @click="handleBatchDelete"
@@ -119,7 +119,7 @@
         <el-table-column label="操作" width="200" align="center" fixed="right">
           <template #default="{ row }">
             <el-button
-              v-auth="'admin:permission-categories:update'"
+              v-auth="'permission_categories:update'"
               type="primary"
               size="small"
               link
@@ -131,7 +131,7 @@
               编辑
             </el-button>
             <el-button
-              v-auth="'admin:permission-categories:delete'"
+              v-auth="'permission_categories:delete'"
               type="danger"
               size="small"
               link

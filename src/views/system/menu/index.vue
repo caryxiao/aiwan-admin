@@ -143,7 +143,18 @@
               />
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12">
+          <!-- 路由名称：目录和菜单显示 -->
+          <el-col
+            v-if="
+              dialogForm.menu_type === 'CATALOG' ||
+              dialogForm.menu_type === 'MENU'
+            "
+            :xs="24"
+            :sm="12"
+            :md="12"
+            :lg="12"
+            :xl="12"
+          >
             <el-form-item label="路由名称" prop="name">
               <el-input
                 v-model="dialogForm.name"
@@ -152,7 +163,18 @@
               />
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12">
+          <!-- 路由路径：目录和菜单显示 -->
+          <el-col
+            v-if="
+              dialogForm.menu_type === 'CATALOG' ||
+              dialogForm.menu_type === 'MENU'
+            "
+            :xs="24"
+            :sm="12"
+            :md="12"
+            :lg="12"
+            :xl="12"
+          >
             <el-form-item label="路由路径" prop="path">
               <el-input
                 v-model="dialogForm.path"
@@ -161,7 +183,15 @@
               />
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12">
+          <!-- 组件路径：只有菜单显示 -->
+          <el-col
+            v-if="dialogForm.menu_type === 'MENU'"
+            :xs="24"
+            :sm="12"
+            :md="12"
+            :lg="12"
+            :xl="12"
+          >
             <el-form-item label="组件路径" prop="component">
               <el-input
                 v-model="dialogForm.component"
@@ -170,6 +200,7 @@
               />
             </el-form-item>
           </el-col>
+          <!-- 权限标识：所有类型都显示 -->
           <el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12">
             <el-form-item label="权限标识" prop="permission_key">
               <el-input
@@ -179,7 +210,18 @@
               />
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="12" :md="12" :lg="12" :xl="12">
+          <!-- 菜单图标：目录和菜单显示 -->
+          <el-col
+            v-if="
+              dialogForm.menu_type === 'CATALOG' ||
+              dialogForm.menu_type === 'MENU'
+            "
+            :xs="24"
+            :sm="12"
+            :md="12"
+            :lg="12"
+            :xl="12"
+          >
             <el-form-item label="菜单图标" prop="icon">
               <el-input
                 v-model="dialogForm.icon"
@@ -210,23 +252,58 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
+          <!-- 是否隐藏：目录和菜单显示 -->
+          <el-col
+            v-if="
+              dialogForm.menu_type === 'CATALOG' ||
+              dialogForm.menu_type === 'MENU'
+            "
+            :xs="24"
+            :sm="24"
+            :md="24"
+            :lg="24"
+            :xl="24"
+          >
             <el-form-item label="是否隐藏">
               <el-switch v-model="dialogForm.is_hidden" />
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
+          <!-- 是否缓存：只有菜单显示 -->
+          <el-col
+            v-if="dialogForm.menu_type === 'MENU'"
+            :xs="24"
+            :sm="24"
+            :md="24"
+            :lg="24"
+            :xl="24"
+          >
             <el-form-item label="是否缓存">
               <el-switch v-model="dialogForm.is_cache" />
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="24" :md="24" :lg="24" :xl="24">
+          <!-- 外部链接：目录和菜单显示 -->
+          <el-col
+            v-if="
+              dialogForm.menu_type === 'CATALOG' ||
+              dialogForm.menu_type === 'MENU'
+            "
+            :xs="24"
+            :sm="24"
+            :md="24"
+            :lg="24"
+            :xl="24"
+          >
             <el-form-item label="外部链接">
               <el-switch v-model="dialogForm.is_external_link" />
             </el-form-item>
           </el-col>
+          <!-- 外部链接地址：当开启外部链接且为目录或菜单时显示 -->
           <el-col
-            v-if="dialogForm.is_external_link"
+            v-if="
+              dialogForm.is_external_link &&
+              (dialogForm.menu_type === 'CATALOG' ||
+                dialogForm.menu_type === 'MENU')
+            "
             :xs="24"
             :sm="24"
             :md="24"

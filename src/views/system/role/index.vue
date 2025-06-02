@@ -37,7 +37,7 @@
           <span class="card-title">角色管理</span>
           <div class="card-actions">
             <el-button
-              v-auth="'admin:roles:create'"
+              v-auth="'roles:create'"
               type="primary"
               @click="handleOpenCreateDialog"
             >
@@ -47,7 +47,7 @@
               新增角色
             </el-button>
             <el-button
-              v-auth="'admin:roles:delete'"
+              v-auth="'roles:delete'"
               type="danger"
               :disabled="!hasSelection"
               @click="handleBatchDelete"
@@ -108,7 +108,7 @@
         <el-table-column label="操作" width="280" align="center" fixed="right">
           <template #default="{ row }">
             <el-button
-              v-auth="'admin:roles:update'"
+              v-auth="'roles:update'"
               type="primary"
               size="small"
               link
@@ -120,7 +120,7 @@
               编辑
             </el-button>
             <el-button
-              v-auth="'admin:roles:permissions'"
+              v-auth="'roles:permissions'"
               type="success"
               size="small"
               link
@@ -132,7 +132,7 @@
               权限配置
             </el-button>
             <el-button
-              v-auth="'admin:roles:delete'"
+              v-auth="'roles:delete'"
               type="danger"
               size="small"
               link
@@ -250,7 +250,12 @@
             <template #default="{ data }">
               <div class="tree-node">
                 <span class="node-label">{{ data.display_name }}</span>
-                <span class="node-key">{{ data.permission_key }}</span>
+                <!-- 只有叶子节点（具体权限项）才显示权限标识 -->
+                <span v-if="data.permission_key" class="node-key">{{
+                  data.permission_key
+                }}</span>
+                <!-- 分类节点显示不同的样式 -->
+                <span v-else class="node-category">分类</span>
               </div>
             </template>
           </el-tree>
@@ -287,15 +292,23 @@ import {
   assignPermissionsToRole,
   getRolePermissions,
   updateRolePermissions,
+  assignPermissionKeysToRole,
   type AdminRole,
   type CreateAdminRoleRequest,
   type UpdateAdminRoleRequest,
-  type AssignPermissionsToRolePayload
+  type AssignPermissionsToRolePayload,
+  type AssignPermissionKeysToRolePayload
 } from "@/api/system/roles";
 import {
   getDefinedPermissions,
-  type DefinedPermission
+  getPermissionTree,
+  getPermissionCategories,
+  type DefinedPermission,
+  type PermissionTreeItem,
+  type PermissionCategory,
+  type PermissionCategoryNode
 } from "@/api/system/permissions";
+import { getRolePermissionKeys } from "@/api/system/roles";
 import { formatDateTime } from "@/utils/dateTime";
 
 defineOptions({
@@ -335,8 +348,9 @@ const permissionLoading = ref(false);
 const permissionSaving = ref(false);
 const currentRole = ref<AdminRole | null>(null);
 const permissionTreeRef = ref<InstanceType<typeof ElTree>>();
-const permissionTreeData = ref<any[]>([]);
-const checkedPermissions = ref<number[]>([]);
+const permissionTreeData = ref<PermissionTreeItem[]>([]);
+const checkedPermissions = ref<string[]>([]);
+const checkedPermissionKeys = ref<string[]>([]);
 
 // 树形控件配置
 const treeProps = {
@@ -424,7 +438,46 @@ const openCreateDialogOriginal = openCreateDialog;
 // 使用新的方法名
 const handleOpenCreateDialog = openCreateDialogWithInit;
 
-// 打开权限配置对话框
+// 转换权限分类节点为树形结构（基于最新API文档）
+const convertCategoryNodesToTree = (
+  nodes: PermissionCategoryNode[]
+): PermissionTreeItem[] => {
+  const result: PermissionTreeItem[] = [];
+
+  const processNode = (node: any): PermissionTreeItem => {
+    // 从API返回的数据结构中，category信息在node.category中
+    const category = node.category;
+    const treeItem: PermissionTreeItem = {
+      id: `category_${category.id}`,
+      display_name:
+        category.display_name ||
+        category.category_key ||
+        `分类-${category.id?.slice(0, 8) || "unknown"}`,
+      type: "category",
+      children: []
+    };
+
+    // 添加权限项作为子节点
+    if (node.permissions && node.permissions.length > 0) {
+      const permissionNodes = node.permissions.map(permission => ({
+        id: permission.id,
+        permission_key: permission.permission_key,
+        display_name: permission.display_name,
+        type: "permission" as const,
+        children: undefined
+      }));
+      treeItem.children!.push(...permissionNodes);
+    }
+
+    // 递归处理子分类 - 在新的API结构中，没有children_categories字段
+
+    return treeItem;
+  };
+
+  return nodes.map(processNode);
+};
+
+// 打开权限配置对话框（基于最新API文档）
 const openPermissionDialog = async (role: AdminRole) => {
   currentRole.value = role;
   permissionDialogVisible.value = true;
@@ -432,22 +485,24 @@ const openPermissionDialog = async (role: AdminRole) => {
   try {
     permissionLoading.value = true;
 
-    // 获取所有权限定义
-    const permissionsResponse = await getDefinedPermissions({
-      page: 1,
-      page_size: 1000
-    });
-    const allPermissions = permissionsResponse.data.items;
+    // 获取权限树数据（基于最新API文档）
+    const permissionTreeResponse = await getPermissionTree();
+    const categoryNodes = permissionTreeResponse.data.tree;
 
-    // 获取角色当前权限
-    const rolePermissionsResponse = await getRolePermissions(role.id);
-    const rolePermissions = rolePermissionsResponse.data;
+    // 转换为前端树组件需要的格式
+    permissionTreeData.value = convertCategoryNodesToTree(categoryNodes);
 
-    // 构建权限树
-    permissionTreeData.value = buildPermissionTree(allPermissions);
+    // 获取角色当前权限键（使用新API）
+    const rolePermissionKeysResponse = await getRolePermissionKeys(role.id);
+    const permissionKeys = rolePermissionKeysResponse.data;
+    checkedPermissionKeys.value = permissionKeys;
 
-    // 设置已选中的权限
-    checkedPermissions.value = rolePermissions.map(Number);
+    // 设置已选中的权限（使用节点ID）
+    const checkedNodeIds = getNodeIdsByPermissionKeys(
+      permissionTreeData.value,
+      permissionKeys
+    );
+    checkedPermissions.value = checkedNodeIds;
 
     // 等待DOM更新后设置选中状态
     await nextTick();
@@ -462,40 +517,36 @@ const openPermissionDialog = async (role: AdminRole) => {
   }
 };
 
-// 构建权限树
-const buildPermissionTree = (permissions: DefinedPermission[]) => {
-  // 按分类分组
-  const groupedByCategory = permissions.reduce(
-    (acc, permission) => {
-      const categoryId = permission.category_id;
-      if (!acc[categoryId]) {
-        acc[categoryId] = [];
+// 根据权限key获取节点ID（更新为支持新的树结构）
+const getNodeIdsByPermissionKeys = (
+  tree: PermissionTreeItem[],
+  permissionKeys: string[]
+): string[] => {
+  const result: string[] = [];
+
+  // 递归遍历树结构
+  const traverse = (nodes: PermissionTreeItem[]) => {
+    if (!nodes) return;
+
+    for (const node of nodes) {
+      // 如果是权限节点且权限key在选中列表中
+      if (
+        node.type === "permission" &&
+        node.permission_key &&
+        permissionKeys.includes(node.permission_key)
+      ) {
+        result.push(node.id);
       }
-      acc[categoryId].push(permission);
-      return acc;
-    },
-    {} as Record<number, DefinedPermission[]>
-  );
 
-  // 构建树形结构
-  const tree: any[] = [];
+      // 递归处理子节点
+      if (node.children && node.children.length > 0) {
+        traverse(node.children);
+      }
+    }
+  };
 
-  Object.entries(groupedByCategory).forEach(([categoryId, perms]) => {
-    const categoryNode = {
-      id: `category_${categoryId}`,
-      display_name: `分类 ${categoryId}`,
-      permission_key: "",
-      children: perms.map(perm => ({
-        id: perm.id,
-        display_name: perm.display_name,
-        permission_key: perm.permission_key,
-        category_id: perm.category_id
-      }))
-    };
-    tree.push(categoryNode);
-  });
-
-  return tree;
+  traverse(tree);
+  return result;
 };
 
 // 关闭权限配置对话框
@@ -504,12 +555,45 @@ const closePermissionDialog = () => {
   currentRole.value = null;
   permissionTreeData.value = [];
   checkedPermissions.value = [];
+  checkedPermissionKeys.value = [];
 };
 
 // 处理权限选择
-const handlePermissionCheck = (data: any, checked: any) => {
-  // 这里可以添加权限选择的逻辑
+const handlePermissionCheck = (data: PermissionTreeItem, checked: any) => {
+  // 记录选择变化，可以在这里添加额外逻辑
   console.log("权限选择变化:", data, checked);
+};
+
+// 获取所有选中节点的permission_key（更新为支持新的树结构）
+const getCheckedPermissionKeys = (
+  tree: PermissionTreeItem[],
+  checkedNodeIds: string[]
+): string[] => {
+  const permissionKeys: string[] = [];
+
+  // 递归遍历树结构
+  const traverse = (nodes: PermissionTreeItem[]) => {
+    if (!nodes) return;
+
+    for (const node of nodes) {
+      // 如果是权限节点且在选中列表中
+      if (
+        node.type === "permission" &&
+        node.permission_key &&
+        checkedNodeIds.includes(node.id)
+      ) {
+        permissionKeys.push(node.permission_key);
+      }
+
+      // 递归处理子节点
+      if (node.children && node.children.length > 0) {
+        traverse(node.children);
+      }
+    }
+  };
+
+  traverse(tree);
+  return permissionKeys;
 };
 
 // 保存角色权限
@@ -519,15 +603,22 @@ const saveRolePermissions = async () => {
   try {
     permissionSaving.value = true;
 
-    // 获取选中的权限ID（只获取叶子节点）
-    const checkedKeys = permissionTreeRef.value.getCheckedKeys() as number[];
-    const leafKeys = checkedKeys.filter(key => {
-      return typeof key === "number" && !key.toString().startsWith("category_");
+    // 获取选中的节点ID（只获取权限节点，过滤掉分类节点）
+    const checkedNodeIds = permissionTreeRef.value.getCheckedKeys() as string[];
+    const permissionNodeIds = checkedNodeIds.filter(id => {
+      // 过滤掉分类节点（以category_开头的节点）
+      return typeof id === "string" && !id.toString().startsWith("category_");
     });
 
-    // 更新角色权限
-    await updateRolePermissions(currentRole.value.id, {
-      permission_ids: leafKeys.map(String)
+    // 获取选中节点的permission_key
+    const selectedPermissionKeys = getCheckedPermissionKeys(
+      permissionTreeData.value,
+      permissionNodeIds
+    );
+
+    // 使用新的API提交权限keys
+    await assignPermissionKeysToRole(currentRole.value.id, {
+      permission_keys: selectedPermissionKeys
     });
 
     ElMessage.success("权限配置保存成功");
@@ -617,6 +708,16 @@ const saveRolePermissions = async () => {
   font-size: 12px;
   color: var(--el-text-color-secondary);
   background: var(--el-fill-color-light);
+  border-radius: 3px;
+}
+
+.node-category {
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  border: 1px solid var(--el-color-primary-light-7);
   border-radius: 3px;
 }
 
