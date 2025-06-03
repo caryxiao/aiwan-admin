@@ -250,12 +250,14 @@
             <template #default="{ data }">
               <div class="tree-node">
                 <span class="node-label">{{ data.display_name }}</span>
-                <!-- 只有叶子节点（具体权限项）才显示权限标识 -->
-                <span v-if="data.permission_key" class="node-key">{{
+                <!-- 只有权限节点才显示权限标识 -->
+                <span v-if="data.type === 'permission'" class="node-key">{{
                   data.permission_key
                 }}</span>
                 <!-- 分类节点显示不同的样式 -->
-                <span v-else class="node-category">分类</span>
+                <span v-else-if="data.type === 'category'" class="node-category"
+                  >分类</span
+                >
               </div>
             </template>
           </el-tree>
@@ -444,15 +446,13 @@ const convertCategoryNodesToTree = (
 ): PermissionTreeItem[] => {
   const result: PermissionTreeItem[] = [];
 
-  const processNode = (node: any): PermissionTreeItem => {
-    // 从API返回的数据结构中，category信息在node.category中
-    const category = node.category;
+  const processNode = (node: PermissionCategoryNode): PermissionTreeItem => {
+    // 创建分类节点
     const treeItem: PermissionTreeItem = {
-      id: `category_${category.id}`,
+      id: `category_${node.category_id}`,
       display_name:
-        category.display_name ||
-        category.category_key ||
-        `分类-${category.id?.slice(0, 8) || "unknown"}`,
+        node.category_name ||
+        `分类-${node.category_id?.slice(0, 8) || "unknown"}`,
       type: "category",
       children: []
     };
@@ -469,7 +469,11 @@ const convertCategoryNodesToTree = (
       treeItem.children!.push(...permissionNodes);
     }
 
-    // 递归处理子分类 - 在新的API结构中，没有children_categories字段
+    // 递归处理子分类
+    if (node.children_categories && node.children_categories.length > 0) {
+      const childCategories = node.children_categories.map(processNode);
+      treeItem.children!.push(...childCategories);
+    }
 
     return treeItem;
   };
