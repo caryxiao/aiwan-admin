@@ -170,7 +170,7 @@
       @close="closeDialog"
     >
       <el-form
-        ref="formRef as any"
+        ref="formRef"
         :model="formData"
         :rules="formRules"
         label-width="100px"

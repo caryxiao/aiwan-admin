@@ -77,5 +77,5 @@ export const refreshTokenApi = (data: RefreshTokenRequest) => {
 
 /** 获取当前用户信息 */
 export const getCurrentUser = () => {
-  return http.request<CurrentUserResult>("get", "/api/v1/auth/me");
+  return http.request<CurrentUserResult>("get", "/api/v1/auth/me/profile");
 };

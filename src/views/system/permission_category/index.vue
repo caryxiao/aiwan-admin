@@ -70,10 +70,12 @@
       <!-- 数据表格 -->
       <el-table
         v-loading="loading"
-        :data="tableData"
+        :data="treeTableData"
         stripe
         border
         style="width: 100%"
+        row-key="id"
+        :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" align="center" />
@@ -169,7 +171,7 @@
       @close="closeDialog"
     >
       <el-form
-        ref="formRef as any"
+        ref="formRef"
         :model="formData"
         :rules="formRules"
         label-width="100px"
@@ -200,6 +202,25 @@
           />
         </el-form-item>
 
+        <el-form-item label="父级分类" prop="parent_id">
+          <el-select
+            v-model="formData.parent_id"
+            placeholder="请选择父级分类"
+            clearable
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="item in categoryOptions"
+              :key="item.id"
+              :label="item.display_name"
+              :value="item.id"
+              :disabled="isEditing && item.id === currentRow?.id"
+            />
+          </el-select>
+          <div class="form-tip">不选择则为顶级分类</div>
+        </el-form-item>
+
         <el-form-item label="排序" prop="sort_order">
           <el-input-number
             v-model="formData.sort_order"
@@ -218,7 +239,7 @@
           <el-button
             type="primary"
             :loading="formLoading"
-            @click="handleSubmit"
+            @click="handleSubmit()"
           >
             确定
           </el-button>
@@ -229,7 +250,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from "vue";
+import { reactive, ref, computed } from "vue";
 import type { FormRules } from "element-plus";
 import { IconifyIconOffline } from "@/components/ReIcon";
 import { useTable } from "@/composables/useTable";
@@ -358,12 +379,90 @@ console.log("权限分类页面初始化，useTable配置:", {
   deleteApi: deletePermissionCategory
 });
 
+// 构建树形数据
+const buildTreeData = (data: PermissionCategory[]): PermissionCategory[] => {
+  // 确保 data 是数组
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  const map = new Map<
+    string,
+    PermissionCategory & { children: PermissionCategory[] }
+  >();
+  const roots: (PermissionCategory & { children: PermissionCategory[] })[] = [];
+
+  // 初始化所有节点
+  data.forEach(item => {
+    map.set(item.id, { ...item, children: [] });
+  });
+
+  // 构建树形结构
+  data.forEach(item => {
+    const node = map.get(item.id)!;
+    if (item.parent_id && map.has(item.parent_id)) {
+      const parent = map.get(item.parent_id)!;
+      parent.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+
+  return roots;
+};
+
+// 树形表格数据
+const treeTableData = computed(() => {
+  return buildTreeData(tableData.value);
+});
+
+// 分类选项列表（排除当前编辑项的子级，避免循环引用）
+const categoryOptions = computed(() => {
+  // 确保 tableData 是数组
+  if (!Array.isArray(tableData.value)) {
+    return [];
+  }
+
+  if (!isEditing || !currentRow) {
+    return tableData.value.map(item => ({
+      id: item.id,
+      display_name: item.display_name
+    }));
+  }
+
+  // 获取当前项的所有子级ID
+  const getChildrenIds = (
+    parentId: string,
+    data: PermissionCategory[]
+  ): string[] => {
+    const children = data.filter(item => item.parent_id === parentId);
+    const childrenIds = children.map(child => child.id);
+    children.forEach(child => {
+      childrenIds.push(...getChildrenIds(child.id, data));
+    });
+    return childrenIds;
+  };
+
+  const excludeIds = [
+    currentRow.id,
+    ...getChildrenIds(currentRow.id, tableData.value)
+  ];
+
+  return tableData.value
+    .filter(item => !excludeIds.includes(item.id))
+    .map(item => ({
+      id: item.id,
+      display_name: item.display_name
+    }));
+});
+
 // 初始化表单数据
 const initFormData = () => {
   return {
     category_key: "",
     display_name: "",
     description: "",
+    parent_id: null,
     sort_order: 0
   };
 };

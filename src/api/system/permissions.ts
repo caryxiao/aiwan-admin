@@ -40,6 +40,7 @@ export interface CreatePermissionCategoryRequest {
   category_key: string;
   display_name: string;
   description?: string | null;
+  parent_id?: string | null;
   sort_order?: number;
 }
 
@@ -47,6 +48,7 @@ export interface UpdatePermissionCategoryRequest {
   category_key?: string;
   display_name?: string;
   description?: string | null;
+  parent_id?: string | null;
   sort_order?: number;
 }
 
@@ -183,6 +185,6 @@ export interface PermissionTreeResponse {
 export const getPermissionTree = () => {
   return http.request<ApiResponse<PermissionTreeResponse>>(
     "get",
-    "/api/v1/permissions/defined/tree"
+    "/api/v1/permissions/defined/hierarchical-tree"
   );
 };

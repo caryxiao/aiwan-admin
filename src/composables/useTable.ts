@@ -346,7 +346,7 @@ export function useTable<T = any>(options: UseTableOptions<T>) {
     dialogTitle,
     dialogMode,
     currentRow,
-    formRef: formRef as any,
+    formRef,
     formData,
     formLoading,
 
