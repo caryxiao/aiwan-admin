@@ -181,6 +181,19 @@ export interface PermissionTreeResponse {
   total_permissions: number;
 }
 
+// 获取权限分类树形结构
+export const getPermissionCategoriesTree = (params?: {
+  page?: number;
+  page_size?: number;
+  search?: string;
+}) => {
+  return http.request<ApiResponse<PaginatedResponse<PermissionCategory>>>(
+    "get",
+    "/api/v1/permissions/categories/tree",
+    { params }
+  );
+};
+
 // 获取权限树（基于最新API文档）
 export const getPermissionTree = () => {
   return http.request<ApiResponse<PermissionTreeResponse>>(
