@@ -5,7 +5,6 @@
       :data="treeTableData"
       style="width: 100%"
       stripe
-      border
       row-key="id"
       :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
       @selection-change="handleSelectionChange"
