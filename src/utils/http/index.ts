@@ -169,8 +169,8 @@ class PureHttp {
           const { status, data } = $error.response;
 
           // 处理表单验证错误 (422)
-          if (status === 422 && data && data.errors) {
-            const errors = data.errors;
+          if (status === 422 && data && (data as any).errors) {
+            const errors = (data as any).errors;
             const errorMessages: string[] = [];
 
             // 收集所有字段的错误信息
@@ -197,10 +197,10 @@ class PureHttp {
             }
           }
           // 处理其他HTTP错误
-          else if (data && data.message) {
+          else if (data && (data as any).message) {
             import("element-plus").then(({ ElMessage }) => {
               ElMessage.error({
-                message: data.message,
+                message: (data as any).message,
                 duration: 3000,
                 showClose: true
               });

@@ -173,25 +173,25 @@ function handleAsyncRoutes(routeList: any[]) {
 
     // 检查是否是菜单数据格式（包含menu_type字段）
     if (routeList[0] && routeList[0].menu_type) {
-      console.log("检测到菜单数据格式，开始转换为路由格式...");
+      // console.log("检测到菜单数据格式，开始转换为路由格式...");
       // 构建菜单树
       const menuTree = buildMenuTree(routeList as AdminMenuTreeItem[]);
-      console.log(
-        "构建的菜单树 (menuTree):",
-        JSON.stringify(cloneDeep(menuTree), null, 2)
-      );
+      // console.log(
+      //   "构建的菜单树 (menuTree):",
+      //   JSON.stringify(cloneDeep(menuTree), null, 2)
+      // );
       // 转换为路由格式
       processedRoutes = transformMenusToRoutes(menuTree);
-      console.log(
-        "转换后的路由数据 (processedRoutes):",
-        JSON.stringify(cloneDeep(processedRoutes), null, 2)
-      );
+      // console.log(
+      //   "转换后的路由数据 (processedRoutes):",
+      //   JSON.stringify(cloneDeep(processedRoutes), null, 2)
+      // );
     }
 
-    console.log(
-      "最终准备添加到 router 的路由数据 (树形 processedRoutes):",
-      JSON.stringify(cloneDeep(processedRoutes), null, 2)
-    );
+    // console.log(
+    //   "最终准备添加到 router 的路由数据 (树形 processedRoutes):",
+    //   JSON.stringify(cloneDeep(processedRoutes), null, 2)
+    // );
 
     // 将处理后的路由添加到路由表中
     // 注意：这里我们假设所有动态获取的路由都应作为 "Home" 路由的子路由
@@ -201,10 +201,10 @@ function handleAsyncRoutes(routeList: any[]) {
       if (route.name && !router.hasRoute(route.name)) {
         try {
           router.addRoute(route); // 直接添加路由，由Vue Router根据定义处理层级
-          console.log(
-            `成功添加路由 ${route.path || "unknown"}:`,
-            JSON.stringify(cloneDeep(route), null, 2)
-          );
+          // console.log(
+          //   `成功添加路由 ${route.path || "unknown"}:`,
+          //   JSON.stringify(cloneDeep(route), null, 2)
+          // );
         } catch (e) {
           console.error(
             `添加路由 ${route.path || "unknown"} 失败:`,
@@ -228,10 +228,10 @@ function handleAsyncRoutes(routeList: any[]) {
 
     // 将扁平化后的路由处理后传递给 usePermissionStoreHook().handleWholeMenus
     // 将具有层级结构的路由数据传递给 store，而不是扁平化的
-    console.log(
-      "准备传递给 store 的层级路由 (processedRoutes):",
-      JSON.stringify(cloneDeep(processedRoutes), null, 2)
-    );
+    // console.log(
+    //   "准备传递给 store 的层级路由 (processedRoutes):",
+    //   JSON.stringify(cloneDeep(processedRoutes), null, 2)
+    // );
     usePermissionStoreHook().handleWholeMenus(processedRoutes);
     console.log(
       "路由处理完成，当前所有路由:",

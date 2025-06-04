@@ -15,7 +15,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">
             <template #icon>
-              <IconifyIconOffline icon="ep:search" />
+              <EpSearch />
             </template>
             搜索
           </el-button>
@@ -42,7 +42,7 @@
               @click="handleOpenCreateDialog"
             >
               <template #icon>
-                <IconifyIconOffline icon="ep:plus" />
+                <EpPlus />
               </template>
               新增分类
             </el-button>
@@ -53,13 +53,13 @@
               @click="handleBatchDelete"
             >
               <template #icon>
-                <IconifyIconOffline icon="ep:delete" />
+                <EpDelete />
               </template>
               批量删除
             </el-button>
             <el-button @click="refresh">
               <template #icon>
-                <IconifyIconOffline icon="ep:refresh" />
+                <EpRefresh />
               </template>
               刷新
             </el-button>
@@ -72,7 +72,6 @@
         v-loading="loading"
         :data="treeTableData"
         stripe
-        border
         style="width: 100%"
         row-key="id"
         :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
@@ -128,7 +127,7 @@
               @click="openEditDialog(row)"
             >
               <template #icon>
-                <IconifyIconOffline icon="ep:edit" />
+                <EpEdit />
               </template>
               编辑
             </el-button>
@@ -140,7 +139,7 @@
               @click="handleDelete(row)"
             >
               <template #icon>
-                <IconifyIconOffline icon="ep:delete" />
+                <EpDelete />
               </template>
               删除
             </el-button>
@@ -252,7 +251,13 @@
 <script setup lang="ts">
 import { reactive, ref, computed } from "vue";
 import type { FormRules } from "element-plus";
-import { IconifyIconOffline } from "@/components/ReIcon";
+
+// 直接导入图标
+import EpSearch from "~icons/ep/search";
+import EpRefresh from "~icons/ep/refresh";
+import EpPlus from "~icons/ep/plus";
+import EpDelete from "~icons/ep/delete";
+import EpEdit from "~icons/ep/edit";
 import { useTable } from "@/composables/useTable";
 import {
   getPermissionCategories,
@@ -444,8 +449,8 @@ const categoryOptions = computed(() => {
   };
 
   const excludeIds = [
-    currentRow.id,
-    ...getChildrenIds(currentRow.id, tableData.value)
+    currentRow.value.id,
+    ...getChildrenIds(currentRow.value.id, tableData.value)
   ];
 
   return tableData.value

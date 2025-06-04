@@ -31,13 +31,13 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearchWithCategoryWrapper">
             <template #icon>
-              <IconifyIconOffline icon="ep:search" />
+              <EpSearch />
             </template>
             搜索
           </el-button>
           <el-button @click="handleResetSearchWithCategoryWrapper">
             <template #icon>
-              <IconifyIconOffline icon="ep:refresh" />
+              <EpRefresh />
             </template>
             重置
           </el-button>
@@ -58,7 +58,7 @@
               @click="handleOpenCreateDialog"
             >
               <template #icon>
-                <IconifyIconOffline icon="ep:plus" />
+                <EpPlus />
               </template>
               新增权限
             </el-button>
@@ -69,13 +69,13 @@
               @click="handleBatchDelete"
             >
               <template #icon>
-                <IconifyIconOffline icon="ep:delete" />
+                <EpDelete />
               </template>
               批量删除
             </el-button>
             <el-button @click="refresh">
               <template #icon>
-                <IconifyIconOffline icon="ep:refresh" />
+                <EpRefresh />
               </template>
               刷新
             </el-button>
@@ -88,7 +88,6 @@
         v-loading="loading"
         :data="tableData"
         stripe
-        border
         style="width: 100%"
         @selection-change="handleSelectionChange"
       >
@@ -138,7 +137,7 @@
               @click="openEditDialog(row)"
             >
               <template #icon>
-                <IconifyIconOffline icon="ep:edit" />
+                <EpEdit />
               </template>
               编辑
             </el-button>
@@ -150,7 +149,7 @@
               @click="handleDelete(row)"
             >
               <template #icon>
-                <IconifyIconOffline icon="ep:delete" />
+                <EpDelete />
               </template>
               删除
             </el-button>
@@ -254,8 +253,14 @@
 
 <script setup lang="ts">
 import { reactive, ref, onMounted } from "vue";
-import { IconifyIconOffline } from "@/components/ReIcon";
 import { useTable } from "@/composables/useTable";
+
+// 直接导入图标
+import EpSearch from "~icons/ep/search";
+import EpRefresh from "~icons/ep/refresh";
+import EpPlus from "~icons/ep/plus";
+import EpDelete from "~icons/ep/delete";
+import EpEdit from "~icons/ep/edit";
 import {
   getDefinedPermissions,
   createDefinedPermission,

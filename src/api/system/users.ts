@@ -24,6 +24,7 @@ export interface CreateAdminUserRequest {
   password: string;
   full_name?: string | null;
   is_active?: boolean | null;
+  mfa_enabled?: boolean;
 }
 
 export interface UpdateAdminUserRequest {
@@ -32,6 +33,7 @@ export interface UpdateAdminUserRequest {
   password?: string;
   full_name?: string | null;
   is_active?: boolean;
+  mfa_enabled?: boolean;
 }
 
 // 用户管理API
@@ -73,5 +75,15 @@ export const getAdminUser = (id: string) => {
   return http.request<ApiResponse<AdminUser>>(
     "get",
     `/api/v1/admin-users/${id}`
+  );
+};
+
+export const resetAdminUserPassword = (id: string, new_password: string) => {
+  return http.request<ApiResponse<null>>(
+    "put",
+    `/api/v1/admin-users/${id}/reset-password`,
+    {
+      data: { new_password }
+    }
   );
 };

@@ -410,13 +410,13 @@ const columns: TableColumnList = [
     minWidth: 100,
     cellRenderer: ({ row, props }) => {
       const type =
-        row.menu_type === "DIRECTORY"
+        row.menu_type === "CATALOG"
           ? "primary"
           : row.menu_type === "MENU"
             ? "success"
             : "warning";
       const text =
-        row.menu_type === "DIRECTORY"
+        row.menu_type === "CATALOG"
           ? "目录"
           : row.menu_type === "MENU"
             ? "菜单"

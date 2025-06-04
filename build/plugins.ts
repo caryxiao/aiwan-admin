@@ -22,7 +22,12 @@ export function getPluginsList(
   const lifecycle = process.env.npm_lifecycle_event;
   return [
     tailwindcss(),
-    vue(),
+    vue({
+      script: {
+        propsDestructure: true,
+        defineModel: true
+      }
+    }),
     // jsx、tsx语法支持
     vueJsx(),
     VueI18nPlugin({
