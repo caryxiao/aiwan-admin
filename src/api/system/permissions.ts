@@ -14,6 +14,11 @@ export interface PermissionCategory {
   updated_at: string;
 }
 
+export interface PermissionCategoryTreeResponse {
+  items: PermissionCategory[];
+  total: number;
+}
+
 // 权限树节点类型（基于最新API文档）
 export interface PermissionCategoryNode {
   category_id: string;
@@ -118,6 +123,14 @@ export const deletePermissionCategory = (id: string) => {
   );
 };
 
+export const batchDeletePermissionCategories = (ids: string[]) => {
+  return http.request<ApiResponse<null>>(
+    "delete",
+    "/api/v1/permissions/categories/batch",
+    { data: { ids } }
+  );
+};
+
 export const getPermissionCategory = (id: string) => {
   return http.request<ApiResponse<PermissionCategory>>(
     "get",
@@ -167,6 +180,14 @@ export const deleteDefinedPermission = (id: string) => {
   );
 };
 
+export const batchDeleteDefinedPermissions = (ids: string[]) => {
+  return http.request<ApiResponse<null>>(
+    "delete",
+    "/api/v1/permissions/defined/batch",
+    { data: { ids } }
+  );
+};
+
 export const getDefinedPermission = (id: string) => {
   return http.request<ApiResponse<DefinedPermission>>(
     "get",
@@ -182,12 +203,8 @@ export interface PermissionTreeResponse {
 }
 
 // 获取权限分类树形结构
-export const getPermissionCategoriesTree = (params?: {
-  page?: number;
-  page_size?: number;
-  search?: string;
-}) => {
-  return http.request<ApiResponse<PaginatedResponse<PermissionCategory>>>(
+export const getPermissionCategoriesTree = (params?: { search?: string }) => {
+  return http.request<ApiResponse<PermissionCategoryTreeResponse>>(
     "get",
     "/api/v1/permissions/categories/tree",
     { params }
