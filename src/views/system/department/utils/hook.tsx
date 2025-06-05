@@ -1,6 +1,5 @@
-import { ref, reactive, computed, nextTick, h } from "vue";
-import { ElMessage, ElMessageBox, ElTag, ElButton } from "element-plus";
-import { Edit, Delete } from "@element-plus/icons-vue";
+import { ref, reactive, computed, h, onMounted } from "vue";
+import { ElMessage, ElMessageBox, ElTag } from "element-plus";
 import { formatDateTime } from "@/utils/dateTime";
 import { addDialog } from "@/components/ReDialog";
 import { usePublicHooks } from "../../../../hooks";
@@ -94,7 +93,7 @@ export function useDepartment() {
     {
       label: "操作",
       fixed: "right",
-      width: 160,
+      width: 210,
       slot: "operation"
     }
   ];
@@ -184,16 +183,6 @@ export function useDepartment() {
       ...formatHigherDeptOptions(dataList.value, excludeIds)
     ];
 
-    // 创建表单数据对象，与DepartmentForm组件的FormData接口匹配
-    const formData = {
-      name: row?.name ?? "",
-      code: row?.code ?? "",
-      parent_id: row?.parent_id ?? null,
-      description: row?.description ?? "",
-      sort_order: row?.sort_order ?? 0,
-      status: row?.status ?? true
-    };
-
     addDialog({
       title,
       props: {
@@ -239,7 +228,10 @@ export function useDepartment() {
 
               let response;
               if (row) {
-                response = await updateDepartment(row.id, requestData);
+                response = await updateDepartment(
+                  row.id,
+                  requestData as UpdateDepartmentRequest
+                );
               } else {
                 response = await createDepartment(
                   requestData as CreateDepartmentRequest
@@ -328,6 +320,10 @@ export function useDepartment() {
       }
     }
   };
+
+  onMounted(() => {
+    onSearch();
+  });
 
   return {
     form,

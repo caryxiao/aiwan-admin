@@ -121,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { FormInstance, TableInstance } from "element-plus";
 import { PureTableBar } from "@/components/RePureTableBar";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
@@ -135,8 +135,8 @@ defineOptions({
   name: "DepartmentManagement"
 });
 
-const formRef = ref<FormInstance>();
-const tableRef = ref<TableInstance>();
+const formRef = ref();
+const tableRef = ref();
 
 const {
   form,
@@ -153,12 +153,8 @@ const {
 } = useDepartment();
 
 const onFullscreen = () => {
-  tableRef.value?.toggleAllSelection();
+  tableRef.value.setAdaptive();
 };
-
-onMounted(() => {
-  onSearch();
-});
 </script>
 
 <style scoped>
