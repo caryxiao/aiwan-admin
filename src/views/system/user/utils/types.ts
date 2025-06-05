@@ -8,6 +8,8 @@ interface FormItemProps {
   password?: string;
   is_active: boolean;
   mfa_enabled: boolean;
+  department_id?: string | null;
+  department_name?: string | null;
   roles?: string[];
   permissions?: string[];
   last_login_at?: string;

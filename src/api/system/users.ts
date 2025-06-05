@@ -1,7 +1,6 @@
 import { http } from "@/utils/http";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
 
-// 用户管理相关类型（基于API文档）
 export interface AdminUser {
   id: string;
   username: string;
@@ -9,13 +8,13 @@ export interface AdminUser {
   full_name?: string | null;
   is_active: boolean;
   mfa_enabled: boolean;
-  totp_setup_at?: string | null;
-  preferred_language_code?: string | null;
-  preferred_timezone?: string | null;
   last_login_at?: string | null;
   last_login_ip?: string | null;
   created_at: string;
   updated_at: string;
+  department_id?: string | null;
+  department_name?: string | null;
+  roles?: { id: string; display_name: string }[]; // 添加角色信息
 }
 
 export interface CreateAdminUserRequest {
@@ -25,6 +24,8 @@ export interface CreateAdminUserRequest {
   full_name?: string | null;
   is_active?: boolean | null;
   mfa_enabled?: boolean;
+  department_id?: string | null;
+  role_ids?: string[]; // 添加角色ID用于创建和更新
 }
 
 export interface UpdateAdminUserRequest {
@@ -34,6 +35,8 @@ export interface UpdateAdminUserRequest {
   full_name?: string | null;
   is_active?: boolean;
   mfa_enabled?: boolean;
+  department_id?: string | null;
+  role_ids?: string[]; // 添加角色ID用于创建和更新
 }
 
 // 用户管理API
@@ -85,5 +88,27 @@ export const resetAdminUserPassword = (id: string, new_password: string) => {
     {
       data: { new_password }
     }
+  );
+};
+
+// 分配用户角色
+export const assignRolesToUser = (
+  userId: string,
+  data: { role_names: string[] }
+) => {
+  return http.request<ApiResponse<null>>(
+    "put",
+    `/api/v1/admin-users/${userId}/roles`,
+    {
+      data
+    }
+  );
+};
+
+// 获取用户角色
+export const getUserRoles = (userId: string) => {
+  return http.request<ApiResponse<{ user_id: string; roles: string[] }>>(
+    "get",
+    `/api/v1/admin-users/${userId}/roles`
   );
 };

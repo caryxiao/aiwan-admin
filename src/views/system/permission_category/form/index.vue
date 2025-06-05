@@ -106,6 +106,7 @@ interface CategoryOption {
   value: string;
   label: string;
   children?: CategoryOption[];
+  [key: string]: any; // 添加索引签名以兼容Element Plus的CascaderOption类型
 }
 
 const props = defineProps({

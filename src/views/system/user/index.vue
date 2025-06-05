@@ -33,18 +33,21 @@
         @reset-password="handleResetPassword"
         @delete="handleDelete"
         @status-change="handleStatusChange"
+        @assign-roles="handleAssignRoles"
       />
     </el-card>
 
     <!-- 用户表单对话框 -->
     <UserForm
       v-model:visible="dialogVisible"
-      v-model:formData="formData"
+      :formData="formData"
       :title="dialogTitle"
       :is-edit="isEdit"
       :loading="submitLoading"
       :form-rules="formRules"
+      :department-options="departmentOptions"
       @close="closeDialog"
+      @cancel="closeDialog"
       @submit="handleSubmit"
     />
 
@@ -60,6 +63,14 @@
       "
       @submit="formData => handlePasswordSubmit(formData)"
     />
+
+    <AssignRoleForm
+      v-if="assignRoleDialogVisible"
+      v-model:visible="assignRoleDialogVisible"
+      :currentAssignUser="currentAssignUser"
+      @close="assignRoleDialogVisible = false"
+      @submit="handleAssignRolesSubmit"
+    />
   </div>
 </template>
 
@@ -70,6 +81,7 @@ import TableToolbar from "./components/TableToolbar.vue";
 import UserTable from "./components/UserTable.vue";
 import UserForm from "./form/index.vue";
 import PasswordResetForm from "./form/password.vue";
+import AssignRoleForm from "./components/AssignRoleForm.vue";
 
 defineOptions({
   name: "SystemUser"
@@ -96,6 +108,10 @@ const {
   passwordFormRef,
   passwordForm,
   currentPasswordUser,
+  departmentOptions,
+  loadingDepartments,
+  assignRoleDialogVisible,
+  currentAssignUser,
 
   // 验证规则
   formRules,
@@ -123,6 +139,8 @@ const {
   handleBatchDelete,
   handleExport,
   refresh,
+  handleAssignRoles,
+  handleAssignRolesSubmit,
 
   formatDateTime
 } = useUser();

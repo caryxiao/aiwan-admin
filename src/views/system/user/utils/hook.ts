@@ -1,4 +1,4 @@
-import { ref, reactive, onMounted, computed } from "vue";
+import { ref, reactive, onMounted, computed, nextTick } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { formatDateTime } from "@/utils/dateTime";
 import { useTable } from "@/composables/useTable";
@@ -8,10 +8,15 @@ import {
   updateAdminUser,
   deleteAdminUser,
   resetAdminUserPassword,
+  assignRolesToUser,
   type AdminUser,
   type CreateAdminUserRequest,
   type UpdateAdminUserRequest
 } from "@/api/system/users";
+import {
+  getDepartmentsTreeAll,
+  type Department
+} from "@/api/system/departments";
 import type { FormItemProps } from "./types";
 import { formRules as getFormRules, passwordRules } from "./rule";
 
@@ -68,6 +73,54 @@ export function useUser() {
   // 状态切换加载状态
   const switchLoadMap = ref<Record<number, { loading: boolean }>>({});
 
+  // 部门数据
+  const departmentOptions = ref<Array<{ id: string; name: string }>>([]);
+  const loadingDepartments = ref(false);
+
+  // 获取部门列表
+  const fetchDepartments = async () => {
+    loadingDepartments.value = true;
+    try {
+      const res = await getDepartmentsTreeAll();
+      console.log("部门API响应:", res);
+      if (res.data) {
+        // res.data 就是 Department[] 类型的数据
+        departmentOptions.value = res.data;
+        console.log("部门选项:", departmentOptions.value);
+      }
+    } catch (error) {
+      console.error("获取部门列表失败:", error);
+    } finally {
+      loadingDepartments.value = false;
+    }
+  };
+
+  // 将部门树扁平化为选项列表
+  // flattenDepartmentTree 函数不再需要，因为我们将使用级联选择器
+  // const flattenDepartmentTree = (
+  //   departments: Department[]
+  // ): Array<{ id: string; name: string }> => {
+  //   const result: Array<{ id: string; name: string }> = [];
+  //   const traverse = (items: Department[], prefix = "") => {
+  //     items.forEach(item => {
+  //       result.push({
+  //         id: item.id,
+  //         name: prefix + item.name
+  //       });
+  //       if (item.children && item.children.length > 0) {
+  //         traverse(item.children, prefix + item.name + " / ");
+  //       }
+  //     });
+  //   };
+  //   traverse(departments);
+  //   return result;
+  // };
+
+  // 注释掉这个onMounted，将fetchDepartments合并到下面的onMounted中
+  // onMounted(() => {
+  //   fetchDepartments();
+  // });
+
   // 对话框相关
   const dialogVisible = ref(false);
   const dialogTitle = ref("新增用户");
@@ -80,6 +133,8 @@ export function useUser() {
     email: "",
     full_name: "",
     password: "",
+    department_id: null,
+    department_name: null,
     is_active: true,
     mfa_enabled: false
   });
@@ -89,6 +144,8 @@ export function useUser() {
   const passwordSubmitLoading = ref(false);
   const passwordFormRef = ref();
   const currentPasswordUser = ref<AdminUser | null>(null);
+  const assignRoleDialogVisible = ref(false);
+  const currentAssignUser = ref<AdminUser | null>(null);
 
   // 刷新表格数据
   const refresh = () => {
@@ -107,39 +164,91 @@ export function useUser() {
   const openCreateDialog = () => {
     dialogTitle.value = "新增用户";
     isEdit.value = false;
-    // 重置表单
+
+    // 先关闭对话框确保状态重置
+    dialogVisible.value = false;
+
+    // 完全重置表单数据，确保清除所有可能的编辑字段
+    Object.keys(formData).forEach(key => {
+      delete formData[key];
+    });
+
     Object.assign(formData, {
       title: "新增用户",
       username: "",
       email: "",
       full_name: "",
       password: "",
+      department_id: null,
+      department_name: null,
       is_active: true,
       mfa_enabled: false
     });
-    dialogVisible.value = true;
+
+    console.log("新增用户表单数据:", formData);
+
+    // 在下一个tick中打开对话框，确保数据已重置
+    nextTick(() => {
+      dialogVisible.value = true;
+      // 清除表单验证状态
+      nextTick(() => {
+        if (formRef.value && formRef.value.formRef) {
+          formRef.value.formRef.clearValidate();
+        }
+      });
+    });
   };
 
   // 打开编辑用户对话框
   const openEditDialog = (row: AdminUser) => {
     dialogTitle.value = "编辑用户";
     isEdit.value = true;
-    // 填充表单数据
+
+    // 确保对话框先关闭
+    dialogVisible.value = false;
+
+    // 直接设置编辑数据，不需要先重置
     Object.assign(formData, {
       id: row.id,
       title: "编辑用户",
       username: row.username,
       email: row.email,
       full_name: row.full_name || "",
+      department_id: row.department_id || null,
+      department_name: row.department_name,
       is_active: row.is_active,
       mfa_enabled: row.mfa_enabled
     });
-    dialogVisible.value = true;
+
+    // 在下一个tick中打开对话框
+    nextTick(() => {
+      dialogVisible.value = true;
+      // 清除可能存在的验证错误
+      nextTick(() => {
+        if (formRef.value && formRef.value.formRef) {
+          formRef.value.formRef.clearValidate();
+        }
+      });
+    });
   };
 
   // 关闭对话框
   const closeDialog = () => {
     dialogVisible.value = false;
+
+    // 立即重置 formData，避免数据残留
+    Object.assign(formData, {
+      title: "",
+      username: "",
+      email: "",
+      full_name: "",
+      password: "",
+      department_id: null,
+      department_name: null,
+      is_active: true,
+      mfa_enabled: false
+    });
+
     // 延迟重置表单，避免闪烁
     setTimeout(() => {
       if (formRef.value) {
@@ -180,7 +289,8 @@ export function useUser() {
           email: formValues.email,
           full_name: processedFullName,
           is_active: formValues.is_active,
-          mfa_enabled: formValues.mfa_enabled
+          mfa_enabled: formValues.mfa_enabled,
+          department_id: formValues.department_id
         };
         console.log("编辑用户参数:", params);
         await updateAdminUser(String(formValues.id), params);
@@ -193,7 +303,8 @@ export function useUser() {
           password: formValues.password as string,
           full_name: processedFullName,
           is_active: formValues.is_active,
-          mfa_enabled: formValues.mfa_enabled
+          mfa_enabled: formValues.mfa_enabled,
+          department_id: formValues.department_id
         };
         console.log("创建用户参数:", params);
         await createAdminUser(params);
@@ -353,9 +464,24 @@ export function useUser() {
     ElMessage.info("导出功能开发中");
   };
 
+  // 处理分配角色
+  const handleAssignRoles = (row: AdminUser) => {
+    currentAssignUser.value = row;
+    assignRoleDialogVisible.value = true;
+  };
+
+  // 处理分配角色提交
+  const handleAssignRolesSubmit = async () => {
+    // AssignRoleForm组件内部已经处理了API调用和成功提示
+    // 这里只需要关闭对话框和刷新数据
+    assignRoleDialogVisible.value = false;
+    refresh();
+  };
+
   // 初始化
   onMounted(() => {
     refresh();
+    fetchDepartments(); // 确保部门数据在组件挂载时加载
   });
 
   return {
@@ -378,6 +504,12 @@ export function useUser() {
     passwordFormRef,
     passwordForm,
     currentPasswordUser,
+    departmentOptions,
+    assignRoleDialogVisible,
+    currentAssignUser,
+    handleAssignRoles,
+    handleAssignRolesSubmit,
+    loadingDepartments,
 
     // 验证规则
     formRules,

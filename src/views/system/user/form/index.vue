@@ -40,7 +40,27 @@
             />
           </el-form-item>
         </el-col>
-        <el-col v-if="!isEdit" :span="12">
+        <el-col :span="12">
+          <el-form-item label="部门" prop="department_id">
+            <el-cascader
+              v-model="localFormData.department_id"
+              :options="departmentOptions"
+              :props="{
+                checkStrictly: true,
+                emitPath: false,
+                value: 'id',
+                label: 'name'
+              }"
+              placeholder="请选择部门"
+              clearable
+              style="width: 100%"
+            />
+          </el-form-item>
+        </el-col>
+      </el-row>
+
+      <el-row v-if="!isEdit" :gutter="20">
+        <el-col :span="12">
           <el-form-item label="密码" prop="password">
             <el-input
               v-model="localFormData.password"
@@ -78,7 +98,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from "vue";
 import type { FormInstance, FormRules } from "element-plus";
-import { FormProps } from "../utils/types";
+import { FormProps, FormItemProps } from "../utils/types";
 
 const props = defineProps<{
   visible: boolean;
@@ -87,28 +107,67 @@ const props = defineProps<{
   loading: boolean;
   formData: FormProps["formData"];
   formRules: FormRules;
+  departmentOptions?: Array<{ id: string; name: string }>;
 }>();
 
 const emit = defineEmits<{
   "update:visible": [value: boolean];
-  "update:formData": [value: FormProps["formData"]];
   submit: [value: FormProps["formData"]];
   cancel: [];
 }>();
 
-// 本地表单数据
-const localFormData = ref({ ...props.formData });
+// 本地表单数据 - 使用深拷贝避免引用问题
+const localFormData = ref<FormItemProps>({
+  title: "",
+  username: "",
+  email: "",
+  full_name: "",
+  password: "",
+  is_active: true,
+  mfa_enabled: false,
+  department_id: null,
+  department_name: null
+});
 
 // 表单引用
 const formRef = ref<FormInstance>();
 
-// 监听props.formData变化，更新本地表单数据
+// 监听props.formData变化，同步到本地副本
 watch(
   () => props.formData,
   newVal => {
-    localFormData.value = { ...newVal };
+    // 使用深拷贝确保数据隔离，但只在有实际数据时更新
+    if (newVal && Object.keys(newVal).length > 0) {
+      localFormData.value = JSON.parse(JSON.stringify(newVal));
+    }
   },
   { deep: true }
+);
+
+// 监听对话框显示状态
+watch(
+  () => props.visible,
+  (newVal, oldVal) => {
+    if (!newVal && oldVal) {
+      // 对话框关闭时重置表单和本地数据
+      nextTick(() => {
+        formRef.value?.resetFields();
+        formRef.value?.clearValidate();
+        // 重置本地表单数据为空对象
+        localFormData.value = {
+          title: "",
+          username: "",
+          email: "",
+          full_name: "",
+          password: "",
+          is_active: true,
+          mfa_enabled: false,
+          department_id: null,
+          department_name: null
+        };
+      });
+    }
+  }
 );
 
 // 不再使用watch监听本地表单数据变化来更新父组件的formData
@@ -143,10 +202,8 @@ const handleSubmit = async () => {
 
       console.log("表单提交数据:", formValues);
 
-      // 先更新父组件的formData
-      emit("update:formData", formValues);
-
-      // 直接触发submit事件，不使用nextTick
+      // 直接触发submit事件，不需要更新父组件的formData
+      // 移除 emit("update:formData", formValues); 避免双向绑定循环
       emit("submit", formValues);
     }
   } catch (error) {

@@ -123,11 +123,9 @@ useEventListener(document, "keydown", ({ code }) => {
               :class="['dark:text-white!', getDropdownItemClass(locale, 'zh')]"
               @click="translationCh"
             >
-              <IconifyIconOffline
-                v-show="locale === 'zh'"
-                class="check-zh"
-                :icon="Check"
-              />
+              <span v-show="locale === 'zh'" class="check-zh">
+                <IconifyIconOffline :icon="Check" />
+              </span>
               简体中文
             </el-dropdown-item>
             <el-dropdown-item

@@ -1,106 +1,168 @@
 <template>
   <div class="main">
-    <!-- 搜索栏 -->
-    <SearchForm
-      v-model:search-value="searchValue"
-      @search="handleSearch"
-      @reset="handleResetSearch"
-    />
-
-    <!-- 表格卡片 -->
-    <el-card shadow="never" class="table-card">
-      <template #header>
-        <TableToolbar
-          :has-selection="hasSelection"
-          @create="openCreateDialog"
-          @batch-delete="handleBatchDelete"
-          @refresh="refresh"
+    <el-form
+      ref="formRef"
+      :inline="true"
+      :model="form"
+      class="search-form bg-bg_color w-full pl-8 pt-[12px] overflow-auto"
+    >
+      <el-form-item label="部门名称：" prop="name">
+        <el-input
+          v-model="form.name"
+          placeholder="请输入部门名称"
+          clearable
+          class="w-[180px]!"
         />
+      </el-form-item>
+      <el-form-item label="状态：" prop="status">
+        <el-select
+          v-model="form.status"
+          placeholder="请选择状态"
+          clearable
+          class="w-[180px]!"
+        >
+          <el-option label="启用" :value="true" />
+          <el-option label="停用" :value="false" />
+        </el-select>
+      </el-form-item>
+      <el-form-item>
+        <el-button
+          type="primary"
+          :icon="useRenderIcon('ri/search-line')"
+          :loading="loading"
+          @click="onSearch"
+        >
+          搜索
+        </el-button>
+        <el-button :icon="useRenderIcon(Refresh)" @click="resetForm()">
+          重置
+        </el-button>
+      </el-form-item>
+    </el-form>
+
+    <PureTableBar
+      title="部门管理"
+      :columns="columns"
+      :tableRef="tableRef?.getTableRef()"
+      @refresh="onSearch"
+      @fullscreen="onFullscreen"
+    >
+      <template #buttons>
+        <el-button
+          type="primary"
+          :icon="useRenderIcon(AddFill)"
+          @click="openDialog()"
+        >
+          新增部门
+        </el-button>
       </template>
-
-      <!-- 数据表格 -->
-      <DepartmentTable
-        :loading="loading"
-        :table-data="tableData"
-        :pagination="pagination"
-        :format-date-time="formatDateTime"
-        @selection-change="handleSelectionChange"
-        @page-change="handlePageChange"
-        @page-size-change="handlePageSizeChange"
-        @edit="openEditDialog"
-        @delete="handleDelete"
-      />
-    </el-card>
-
-    <!-- 部门表单对话框 -->
-    <DepartmentForm
-      v-model:visible="dialogVisible"
-      :title="dialogTitle"
-      :form-data="formData"
-      :is-edit="isEdit"
-      :loading="submitLoading"
-      :department-options="departmentOptions"
-      :current-edit-id="currentRow?.id || ''"
-      @close="closeDialog"
-      @submit="handleSubmit"
-    />
+      <template v-slot="{ size, dynamicColumns }">
+        <pure-table
+          ref="tableRef"
+          adaptive
+          :adaptiveConfig="{ offsetBottom: 45 }"
+          align-whole="center"
+          row-key="id"
+          showOverflowTooltip
+          table-layout="auto"
+          default-expand-all
+          :loading="loading"
+          :size="size"
+          :data="dataList"
+          :columns="dynamicColumns"
+          :header-cell-style="{
+            background: 'var(--el-fill-color-light)',
+            color: 'var(--el-text-color-primary)'
+          }"
+          @selection-change="handleSelectionChange"
+        >
+          <template #operation="{ row }">
+            <el-button
+              class="reset-margin"
+              link
+              type="primary"
+              :size="size"
+              :icon="useRenderIcon(EditPen)"
+              @click="openDialog('修改', row)"
+            >
+              修改
+            </el-button>
+            <el-button
+              class="reset-margin"
+              link
+              type="primary"
+              :size="size"
+              :icon="useRenderIcon(AddFill)"
+              @click="openDialog('新增', { parentId: row.id } as any)"
+            >
+              新增
+            </el-button>
+            <el-popconfirm
+              :title="`是否确认删除部门名称为${row.name}的这条数据`"
+              @confirm="handleDelete(row)"
+            >
+              <template #reference>
+                <el-button
+                  class="reset-margin"
+                  link
+                  type="primary"
+                  :size="size"
+                  :icon="useRenderIcon(Delete)"
+                >
+                  删除
+                </el-button>
+              </template>
+            </el-popconfirm>
+          </template>
+        </pure-table>
+      </template>
+    </PureTableBar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { ref, onMounted } from "vue";
+import { FormInstance, TableInstance } from "element-plus";
+import { PureTableBar } from "@/components/RePureTableBar";
+import { useRenderIcon } from "@/components/ReIcon/src/hooks";
+import Delete from "~icons/ep/delete";
+import EditPen from "~icons/ep/edit-pen";
+import Refresh from "~icons/ep/refresh";
+import AddFill from "~icons/ri/add-circle-line";
 import { useDepartment } from "./utils/hook";
-import SearchForm from "./components/SearchForm.vue";
-import TableToolbar from "./components/TableToolbar.vue";
-import DepartmentTable from "./components/DepartmentTable.vue";
-import DepartmentForm from "./form/index.vue";
 
 defineOptions({
   name: "DepartmentManagement"
 });
 
-// 使用部门管理的组合式函数
+const formRef = ref<FormInstance>();
+const tableRef = ref<TableInstance>();
+
 const {
+  form,
   loading,
-  tableData,
-  searchValue,
-  pagination,
-  dialogVisible,
-  dialogTitle,
-  isEdit,
-  formData,
-  submitLoading,
+  columns,
+  dataList,
+  selectedRows,
   hasSelection,
-  departmentOptions,
-  currentRow,
-  formatDateTime,
-  fetchData,
-  handleSearch,
-  handleResetSearch,
-  handlePageChange,
-  handlePageSizeChange,
   handleSelectionChange,
-  refresh,
-  openCreateDialog,
-  openEditDialog,
-  closeDialog,
-  handleSubmit,
-  handleDelete,
-  handleBatchDelete
+  resetForm,
+  onSearch,
+  openDialog,
+  handleDelete
 } = useDepartment();
 
-// 组件挂载时获取数据
+const onFullscreen = () => {
+  tableRef.value?.toggleAllSelection();
+};
+
 onMounted(() => {
-  fetchData();
+  onSearch();
 });
 </script>
 
 <style scoped>
-.department-management {
-  padding: 20px;
-}
-
-.table-card {
-  margin-top: 16px;
+.search-form {
+  margin-bottom: 16px;
 }
 </style>

@@ -132,7 +132,10 @@ const transitionMain = defineComponent({
                 'flex-direction': 'column'
               }"
             >
-              <el-backtop :title="t('buttons.pureBackTop')">
+              <el-backtop
+                :title="t('buttons.pureBackTop')"
+                target=".app-main .el-scrollbar__wrap"
+              >
                 <BackTopIcon />
               </el-backtop>
               <div class="grow">

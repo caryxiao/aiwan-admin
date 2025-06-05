@@ -16,6 +16,11 @@
           <span>{{ row.full_name || "-" }}</span>
         </template>
       </el-table-column>
+      <el-table-column prop="department_name" label="部门" min-width="120">
+        <template #default="{ row }">
+          <span>{{ row.department_name || "-" }}</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="is_active" label="状态" width="100" align="center">
         <template #default="{ row, $index }">
           <el-switch
@@ -55,18 +60,40 @@
       </el-table-column>
       <el-table-column label="操作" width="220" fixed="right" align="center">
         <template #default="{ row }">
-          <el-button type="primary" link size="small" @click="handleEdit(row)">
+          <el-button
+            type="primary"
+            link
+            size="small"
+            :icon="Edit"
+            @click="handleEdit(row)"
+          >
             编辑
           </el-button>
           <el-button
             type="primary"
             link
             size="small"
+            :icon="Key"
             @click="handleResetPassword(row)"
           >
             重置密码
           </el-button>
-          <el-button type="danger" link size="small" @click="handleDelete(row)">
+          <el-button
+            type="primary"
+            link
+            size="small"
+            :icon="UserIcon"
+            @click="handleAssignRoles(row)"
+          >
+            分配角色
+          </el-button>
+          <el-button
+            type="danger"
+            link
+            size="small"
+            :icon="Delete"
+            @click="handleDelete(row)"
+          >
             删除
           </el-button>
         </template>
@@ -90,6 +117,7 @@
 </template>
 
 <script setup lang="ts">
+import { Edit, Delete, Key, User as UserIcon } from "@element-plus/icons-vue";
 import { type AdminUser } from "@/api/system/users";
 import type { PaginationConfig } from "@/composables/useTable";
 
@@ -127,7 +155,8 @@ const emit = defineEmits([
   "edit",
   "reset-password",
   "delete",
-  "status-change"
+  "status-change",
+  "assign-roles"
 ]);
 
 // 表格选择项变化
@@ -158,6 +187,11 @@ const handleResetPassword = (row: AdminUser) => {
 // 删除用户
 const handleDelete = (row: AdminUser) => {
   emit("delete", row);
+};
+
+// 分配角色
+const handleAssignRoles = (row: AdminUser) => {
+  emit("assign-roles", row);
 };
 
 // 状态变更

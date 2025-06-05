@@ -7,21 +7,26 @@ export const formRules = (
 ): FormRules => {
   const rules: FormRules = {
     username: [
-      { required: true, message: "请输入用户名", trigger: "blur" },
+      { required: true, message: "请输入用户名", trigger: "manual" },
       {
         min: 3,
         max: 20,
         message: "用户名长度在 3 到 20 个字符",
-        trigger: "blur"
+        trigger: "manual"
       }
     ],
     email: [
-      { required: true, message: "请输入邮箱", trigger: "blur" },
-      { type: "email", message: "请输入正确的邮箱格式", trigger: "blur" }
+      { required: true, message: "请输入邮箱", trigger: "manual" },
+      { type: "email", message: "请输入正确的邮箱格式", trigger: "manual" }
     ],
     password: [
-      { required: !isEdit, message: "请输入密码", trigger: "blur" },
-      { min: 6, max: 20, message: "密码长度在 6 到 20 个字符", trigger: "blur" }
+      { required: !isEdit, message: "请输入密码", trigger: "manual" },
+      {
+        min: 6,
+        max: 20,
+        message: "密码长度在 6 到 20 个字符",
+        trigger: "manual"
+      }
     ]
   };
 
