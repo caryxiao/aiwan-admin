@@ -29,7 +29,7 @@ const props = {
     require: false,
     default: "0"
   },
-  /** 将宽度调整为父元素宽度 */
+  /** 将宽度调整为父元素宽度	 */
   block: {
     type: Boolean,
     default: false
@@ -62,50 +62,16 @@ export default defineComponent({
     const curMouseActive = ref(-1);
     const segmentedItembg = ref("");
     const instance = getCurrentInstance()!;
-
     const curIndex = isNumber(props.modelValue)
       ? toRef(props, "modelValue")
       : ref(0);
 
-    // 如果modelValue是字符串类型，需要根据options中的value找到对应的索引
-    if (!isNumber(props.modelValue) && props.modelValue !== undefined) {
-      const index = props.options.findIndex(
-        option => option.value === props.modelValue
-      );
-      if (index >= 0) {
-        curIndex.value = index;
-      }
-    }
-
-    // 监听modelValue变化，当外部传入新的字符串值时更新curIndex
-    // watch(
-    //   () => props.modelValue,
-    //   newValue => {
-    //     if (!isNumber(newValue) && newValue !== undefined) {
-    //       const index = props.options.findIndex(
-    //         option => option.value === newValue
-    //       );
-    //       if (index >= 0) {
-    //         curIndex.value = index;
-    //       }
-    //     }
-    //   }
-    // );
-
     function handleChange({ option, index }, event: Event) {
       if (props.disabled || option.disabled) return;
       event.preventDefault();
-
-      // 如果modelValue是数字类型，发送索引；如果是字符串类型，发送option.value或索引
-      if (isNumber(props.modelValue)) {
-        emit("update:modelValue", index);
-      } else {
-        // 对于非数字类型，优先使用option.value，如果没有则使用索引
-        const newValue = option.value !== undefined ? option.value : index;
-        emit("update:modelValue", newValue);
-        curIndex.value = index;
-      }
-
+      isNumber(props.modelValue)
+        ? emit("update:modelValue", index)
+        : (curIndex.value = index);
       segmentedItembg.value = "";
       emit("change", { index, option });
     }

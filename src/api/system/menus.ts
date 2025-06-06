@@ -26,8 +26,15 @@ export interface AdminMenu {
 }
 
 // 菜单管理 API
-export const getAdminMenus = () => {
-  return http.request<ApiResponse<AdminMenu[]>>("get", "/api/v1/menus");
+interface GetAdminMenusParams {
+  title?: string;
+  status?: string;
+}
+
+export const getAdminMenus = (params?: GetAdminMenusParams) => {
+  return http.request<ApiResponse<AdminMenu[]>>("get", "/api/v1/menus", {
+    params
+  });
 };
 
 export const getAdminMenu = (id: string) => {
