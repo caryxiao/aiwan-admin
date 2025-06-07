@@ -1,23 +1,56 @@
+# Vue3 + TypeScript 项目开发规范文档
+
+> 本文档基于 vue-pure-admin 框架，定义了完整的前端开发规范，旨在确保代码质量、提高开发效率、便于团队协作和AI辅助开发。
+
+## 目录
+
+1. [视图层目录组织结构](#1-视图层目录组织结构)
+2. [单个视图的内部文件组织方式](#2-单个视图的内部文件组织方式)
+3. [视图所需组件分析](#3-视图所需组件分析)
+4. [开发规则与技术规范总结](#4-开发规则与技术规范总结)
+5. [表单组件开发规范](#5-表单组件开发规范)
+6. [CRUD模块开发规范](#6-crud模块开发规范)
+7. [表单验证规范](#7-表单验证规范)
+8. [API接口规范](#8-api接口规范)
+9. [错误处理规范](#9-错误处理规范)
+10. [性能优化规范](#10-性能优化规范)
+11. [代码质量规范](#11-代码质量规范)
+
+---
+
 ## 1. 视图层目录组织结构
 
 项目的视图文件全部存放在 `src/views/` 目录下。其组织结构遵循 **模块化** 和 **关注点分离** 的原则。
 
+### 1.1 顶级目录结构
+
 - **顶级目录按模块划分**：每个直接位于 `src/views/` 下的子目录都代表一个独立的功能模块。例如：
-    - `system/`: 系统管理模块
-    - `monitor/`: 系统监控模块
-    - `table/`: 表格示例模块
-    - `login/`: 登录页面
-    - `welcome/`: 首页
+  - `system/`: 系统管理模块
+  - `monitor/`: 系统监控模块
+  - `table/`: 表格示例模块
+  - `login/`: 登录页面
+  - `welcome/`: 首页
+  - `profile/`: 个人中心
+  - `error/`: 错误页面
+
+### 1.2 模块内部结构
+
 - **视图文件**：每个模块目录下包含实现具体页面功能的 `.vue` 文件。通常，一个复杂的页面会拥有自己的子目录来组织其相关文件。
 - **示例**：以 `system` 模块为例，其内部结构如下：
-    - `src/views/system/user/`: 用户管理视图
-    - `src/views/system/role/`: 角色管理视图
-    - `src/views/system/menu/`: 菜单管理视图
-    - `src/views/system/dept/`: 部门管理视图
+  - `src/views/system/user/`: 用户管理视图
+  - `src/views/system/role/`: 角色管理视图
+  - `src/views/system/menu/`: 菜单管理视图
+  - `src/views/system/dept/`: 部门管理视图
+
+### 1.3 命名规范
+
+- **目录命名**：使用小写字母和连字符，如 `user-management`
+- **文件命名**：Vue组件使用 PascalCase，如 `UserManagement.vue`
+- **工具文件命名**：使用 camelCase，如 `userUtils.ts`
 
 这种结构使得功能模块界限清晰，便于团队协作和后期维护。
 
-------
+---
 
 ## 2. 单个视图的内部文件组织方式
 
@@ -48,7 +81,7 @@
 
 4. **样式隔离**：除了在 `.vue` 文件中使用 `<style scoped>` 外，对于一些需要覆盖组件库默认样式或定义复杂动画的场景，会使用独立的 `.css` 或 `.scss` 文件。
 
-------
+---
 
 ## 3. 视图所需组件分析
 
@@ -62,11 +95,11 @@
 
   ：
 
-    - `RePureTableBar` (`/src/components/RePureTableBar/`): 功能强大的表格工具栏，集成了刷新、列设置、搜索等功能，是项目中表格页面的标配。
-    - `ReDialog` (`/src/components/ReDialog/`): 对 `el-dialog` 的二次封装，提供了更便捷的拖拽、全屏等功能。
-    - `ReIcon` (`/src/components/ReIcon/`): 统一的图标解决方案，支持 `iconify` 和本地 `svg`。
-    - `ReAuth` (`/src/components/ReAuth/`): 权限控制组件，用于按权限动态显示或隐藏页面元素。
-    - `ReSegmented` (`/src/components/ReSegmented/`): 自定义的分段控制器，提供了更丰富的样式和交互。
+  - `RePureTableBar` (`/src/components/RePureTableBar/`): 功能强大的表格工具栏，集成了刷新、列设置、搜索等功能，是项目中表格页面的标配。
+  - `ReDialog` (`/src/components/ReDialog/`): 对 `el-dialog` 的二次封装，提供了更便捷的拖拽、全屏等功能。
+  - `ReIcon` (`/src/components/ReIcon/`): 统一的图标解决方案，支持 `iconify` 和本地 `svg`。
+  - `ReAuth` (`/src/components/ReAuth/`): 权限控制组件，用于按权限动态显示或隐藏页面元素。
+  - `ReSegmented` (`/src/components/ReSegmented/`): 自定义的分段控制器，提供了更丰富的样式和交互。
 
 ### 视图独立组件
 
@@ -80,15 +113,15 @@
   welcome
   ```
 
-   (首页) 视图中：
+  (首页) 视图中：
 
-    - `src/views/welcome/components/Bar.vue`: 用于展示柱状图的 ECharts 组件。
-    - `src/views/welcome/components/Line.vue`: 用于展示折线图的 ECharts 组件。
-    - `src/views/welcome/components/Pie.vue`: 用于展示饼图的 ECharts 组件。
+  - `src/views/welcome/components/Bar.vue`: 用于展示柱状图的 ECharts 组件。
+  - `src/views/welcome/components/Line.vue`: 用于展示折线图的 ECharts 组件。
+  - `src/views/welcome/components/Pie.vue`: 用于展示饼图的 ECharts 组件。
 
 这些图表组件仅在首页使用，因此将它们放在 `welcome` 视图内部可以避免污染全局组件空间，也使得视图的依赖关系更加内聚。
 
-------
+---
 
 ## 4. 开发规则与技术规范总结
 
@@ -114,6 +147,111 @@
    - **Tailwind CSS** 和 **SCSS** 结合使用。`tailwind.css` 用于快速构建原子化的样式，而 `scss` (`.scss` 文件) 用于编写更复杂的、结构化的样式规则以及覆盖UI库样式。
    - 组件级别样式优先使用 `<style scoped>` 来避免全局样式污染。
 
+## 5. 表单组件开发规范
+
+### 5.1 表单逻辑集中化原则
+
+**核心原则**：表单组件应保持简洁，避免在 `.vue` 文件中包含过多的业务逻辑和 `watch` 方法。所有复杂的业务逻辑应集中在对应的 `hook.tsx` 文件中实现。
+
+**具体要求**：
+
+1. **避免在表单组件中使用过多 `watch` 方法**：
+
+   - 表单组件应专注于UI渲染和基础的用户交互
+   - 复杂的数据监听和处理逻辑应移至 `hook.tsx` 中
+   - 如需监听 props 变化，应使用最简单的同步逻辑
+
+2. **操作方法集中管理**：
+
+   - 表单的提交、重置、验证等操作方法应在 `hook.tsx` 中定义
+   - 表单组件只负责暴露必要的引用（如表单实例、表单数据）
+   - 避免在各个表单组件中分散定义相似的操作方法
+
+3. **数据流向清晰**：
+   - 使用 props 向下传递数据，通过 `defineExpose` 向上暴露方法
+   - 避免直接修改 props，使用本地响应式数据进行双向绑定
+   - 通过 `hook.tsx` 统一管理表单状态和数据流
+
+### 5.2 表单验证规则统一管理
+
+**核心原则**：所有表单验证规则应统一在各模块的 `utils/rule.ts` 文件中定义，其他位置只做引用，不得重复定义。
+
+**具体要求**：
+
+1. **规则定义位置**：
+
+   - 每个模块的表单验证规则统一放在 `src/views/[module]/utils/rule.ts` 中
+   - 规则以函数形式导出，便于复用和维护
+   - 支持动态参数传入，提高规则的灵活性
+
+2. **规则引用方式**：
+
+   ```typescript
+   // 正确：在 rule.ts 中定义
+   export const formRules = () => ({
+     username: [{ required: true, message: "请输入用户名", trigger: "blur" }]
+   });
+
+   // 正确：在组件中引用
+   import { formRules } from "../utils/rule";
+   const rules = formRules();
+   ```
+
+3. **避免重复定义**：
+   - 不得在 `.vue` 文件中直接定义验证规则
+   - 相似的验证规则应抽取为通用函数
+   - 复杂的自定义验证器应在 `rule.ts` 中统一管理
+
+### 5.3 参考实现标准
+
+**参考项目**：`vue-pure-admin` 中的 `user` 模块实现
+
+**标准实现模式**：
+
+1. **表单组件结构**：
+
+   ```vue
+   <!-- form/component.vue -->
+   <template>
+     <el-form :model="localFormData" :rules="rules">
+       <!-- 表单项 -->
+     </el-form>
+   </template>
+
+   <script setup>
+   // 最小化逻辑，主要负责UI渲染
+   // 暴露必要的方法给父组件
+   defineExpose({ getRef, getFormData });
+   </script>
+   ```
+
+2. **Hook 文件结构**：
+
+   ```typescript
+   // utils/hook.tsx
+   export function useModule() {
+     // 集中管理所有业务逻辑
+     // 表单状态管理
+     // 操作方法定义
+     // 对话框控制逻辑
+     return {
+       /* 暴露的状态和方法 */
+     };
+   }
+   ```
+
+3. **规则文件结构**：
+
+   ```typescript
+   // utils/rule.ts
+   export const formRules = () => ({
+     /* 验证规则 */
+   });
+   export const passwordRules = () => ({
+     /* 密码规则 */
+   });
+   ```
+
 ### 核心组件、使用规则及应用场景分析
 
 #### 1. RePureTableBar - 高级表格工具栏
@@ -122,29 +260,29 @@
 
 - **使用规则**: 该组件通过属性（props）和事件（events）与父组件进行交互。
 
-    - `title` (prop): `String` 类型，设置工具栏左侧的标题。
-    - `buttons` (prop): `Array<VNode | Component>` 类型，用于在工具栏右侧插入自定义按钮，如“新增”、“导出”等。
-    - `columns` (prop): `Array<TableColumnList>` 类型，这是 **必需** 的属性，接收 `pure-table` 的列配置数组，用于“列设置”功能。
+  - `title` (prop): `String` 类型，设置工具栏左侧的标题。
+  - `buttons` (prop): `Array<VNode | Component>` 类型，用于在工具栏右侧插入自定义按钮，如“新增”、“导出”等。
+  - `columns` (prop): `Array<TableColumnList>` 类型，这是 **必需** 的属性，接收 `pure-table` 的列配置数组，用于“列设置”功能。
 
-    - `adaptive` (prop): `boolean` 类型，是否开启表格高度自适应，默认 `true`。
+  - `adaptive` (prop): `boolean` 类型，是否开启表格高度自适应，默认 `true`。
 
-    - `refresh` (event): 当用户点击刷新按钮时触发，父组件应监听此事件来重新加载表格数据。
-    - `onUpdate:columns` (event): 当用户在“列设置”中改变了列的显隐或顺序时触发。
+  - `refresh` (event): 当用户点击刷新按钮时触发，父组件应监听此事件来重新加载表格数据。
+  - `onUpdate:columns` (event): 当用户在“列设置”中改变了列的显隐或顺序时触发。
 
 - **应用场景**: 所有需要展示数据的表格页面。几乎是项目中每个CURD（增删改查）页面的标配组件，放在表格的上方，提供统一的操作体验。 **示例路径**: `src/views/system/user/index.vue`
 
-------
+---
 
 #### 2. ReDialog - 可拖拽弹窗
 
 - **功能描述**: 基于 `Element-Plus` 的 `el-dialog` 进行的二次封装。它在保留 `el-dialog` 所有功能的基础上，增加了**可拖拽**、**可全屏**、**自适应高度**等实用特性。
 - **使用规则**:
-    - 继承 `el-dialog` 的所有 `props`，如 `v-model:visible`, `title` 等。
-    - `draggable` (prop): `Boolean` 类型，设置为 `true` 即可开启拖拽功能。
-    - 通过 `slot` 插入内容和底部按钮，与 `el-dialog` 用法一致。
+  - 继承 `el-dialog` 的所有 `props`，如 `v-model:visible`, `title` 等。
+  - `draggable` (prop): `Boolean` 类型，设置为 `true` 即可开启拖拽功能。
+  - 通过 `slot` 插入内容和底部按钮，与 `el-dialog` 用法一致。
 - **应用场景**: 任何需要弹出表单、详情、确认信息等场景。例如，在用户管理页面点击“新增”或“编辑”按钮时，弹出的表单就可以使用 `ReDialog`。 **示例路径**: `src/views/system/user/utils/hook.tsx` (在 hook 中通过 `addDialog` 等方法控制)
 
-------
+---
 
 #### 3. ReIcon - 统一图标组件
 
@@ -152,77 +290,83 @@
 
 - **使用规则**:
 
-    - ```
+  - ```
     icon
     ```
 
-     (prop):
+  ```
 
-    ```
-    String
-    ```
+  (prop):
 
-     类型，指定要渲染的图标名称。
+  ```
 
-        - `Iconify` 图标格式: `collection-name:icon-name` (例如: `ep:search`)。
-        - 本地 `SVG` 图标格式: `svg-name` (例如: `logo`)。
+  String
 
-    - `color` (prop): `String` 类型，设置图标颜色。
+  ```
 
-    - `size` (prop): `String | Number` 类型，设置图标大小。
+  类型，指定要渲染的图标名称。
+
+      - `Iconify` 图标格式: `collection-name:icon-name` (例如: `ep:search`)。
+      - 本地 `SVG` 图标格式: `svg-name` (例如: `logo`)。
+
+  - `color` (prop): `String` 类型，设置图标颜色。
+
+  - `size` (prop): `String | Number` 类型，设置图标大小。
+
+  ```
 
 - **应用场景**: 贯穿整个项目，用于菜单、按钮、提示信息等任何需要图标的地方。它统一了项目的图标来源和使用方式，便于管理和替换。 **示例路径**: 几乎所有 `.vue` 和 `.tsx` 文件中都有使用。
 
-------
+---
 
 #### 4. ReAuth - 权限控制组件
 
 - **功能描述**: 一个用于按钮级别权限控制的组件。它会根据传入的权限标识和当前用户的权限列表来决定是否渲染其包裹的子元素。
 - **使用规则**:
-    - `value` (prop): `String` 或 `Array<String>` 类型，定义所需的权限标识。
-    - 组件会包裹需要进行权限判断的元素。如果用户拥有 `value` 定义的权限，则子元素正常显示；否则不显示。
+  - `value` (prop): `String` 或 `Array<String>` 类型，定义所需的权限标识。
+  - 组件会包裹需要进行权限判断的元素。如果用户拥有 `value` 定义的权限，则子元素正常显示；否则不显示。
 - **应用场景**: 在页面中对按钮或特定区域进行精细化的权限控制。例如，用户列表页的“新增”、“删除”按钮，只有具备相应权限（如 `system:user:add`, `system:user:delete`）的用户才能看到。 **示例路径**: `src/views/system/user/utils/hook.tsx` (在表格操作列的按钮上使用)
 
-------
+---
 
 #### 5. ReCropper - 图片裁剪组件
 
 - **功能描述**: 一个高性能的图片裁剪组件，支持矩形和圆形裁剪，提供丰富的配置项和实时预览功能。
 - **使用规则**:
-    - `imgSrc` (prop): `String` 类型，要裁剪的原始图片地址。
-    - `circled` (prop): `Boolean` 类型，是否为圆形裁剪。
-    - `quality` (prop): `Number` 类型，输出图片的质量 (0到1之间)。
-    - `getCroppedBlob` (event): 裁剪完成后，触发此事件并返回裁剪后的 `Blob` 对象。
-    - `getReady` (event): 组件加载完成后触发。
+  - `imgSrc` (prop): `String` 类型，要裁剪的原始图片地址。
+  - `circled` (prop): `Boolean` 类型，是否为圆形裁剪。
+  - `quality` (prop): `Number` 类型，输出图片的质量 (0到1之间)。
+  - `getCroppedBlob` (event): 裁剪完成后，触发此事件并返回裁剪后的 `Blob` 对象。
+  - `getReady` (event): 组件加载完成后触发。
 - **应用场景**: 用于用户上传头像、裁剪文章封面等需要对图片进行二次处理的场景。
 
-------
+---
 
 #### 6. ReSeamlessScroll - 无缝滚动组件
 
 - **功能描述**: 一个可以实现内容无缝、平滑滚动的组件，常用于展示通知、榜单等需要循环滚动的列表。
 - **使用规则**:
-    - `list` (prop): `Array` 类型，需要滚动的列表数据。
-    - `isSingle` (prop): `Boolean` 类型，是否是单行滚动。
-    - `direction` (prop): `String` 类型，滚动方向，可选值为 `up` (默认) 或 `down`。
-    - 通过默认 `slot` 传入列表项的模板。
+  - `list` (prop): `Array` 类型，需要滚动的列表数据。
+  - `isSingle` (prop): `Boolean` 类型，是否是单行滚动。
+  - `direction` (prop): `String` 类型，滚动方向，可选值为 `up` (默认) 或 `down`。
+  - 通过默认 `slot` 传入列表项的模板。
 - **应用场景**:
-    - 大屏或首页展示滚动的通知公告。
-    - 展示实时更新的数据榜单，如销售龙虎榜。
+  - 大屏或首页展示滚动的通知公告。
+  - 展示实时更新的数据榜单，如销售龙虎榜。
 
-------
+---
 
 #### 7. ReSegmented - 分段控制器
 
 - **功能描述**: 对 `Element-Plus` 相应组件的封装和样式优化，提供了一种在多个选项中进行切换的UI形式，常用于顶部标签页的模式切换。
 - **使用规则**:
-    - `options` (prop): `Array` 类型，分段器的选项配置，通常是 `{ label, value, icon }` 的结构。
-    - `v-model:value`：双向绑定当前选中的 `value`。
+  - `options` (prop): `Array` 类型，分段器的选项配置，通常是 `{ label, value, icon }` 的结构。
+  - `v-model:value`：双向绑定当前选中的 `value`。
 - **应用场景**:
-    - 系统设置中切换布局模式（垂直、水平、混合）。
-    - 作为内容区域的筛选器，切换不同类型的数据视图。 **示例路径**: `src/layout/components/lay-sidebar/components/TopNav.vue`
+  - 系统设置中切换布局模式（垂直、水平、混合）。
+  - 作为内容区域的筛选器，切换不同类型的数据视图。 **示例路径**: `src/layout/components/lay-sidebar/components/TopNav.vue`
 
-------
+---
 
 #### 8. 其他核心组件概览
 
@@ -239,3 +383,1292 @@
 | **ReTypeit**      | 打字机效果组件，模拟文本输入动画。          | 首页、引导页、个人简介等吸引注意力的场景。 |
 | **ReVxeTableBar** | 专为 `vxe-table` 封装的工具栏。             | 使用 `vxe-table` 的页面，提供统一操作。    |
 | **ReTreeLine**    | 带连接线的树形组件，增强层级关系的可视化。  | 部门结构、菜单管理等树形数据展示。         |
+
+---
+
+## 四、CRUD 模块开发规范（基于权限分类管理和部门管理）
+
+### 4.1 模块结构标准
+
+每个 CRUD 模块应遵循以下目录结构：
+
+```
+src/views/system/[module_name]/
+├── index.vue          # 主视图文件
+├── form/
+│   └── index.vue      # 表单组件
+└── utils/
+    ├── hook.tsx       # 业务逻辑钩子
+    └── types.ts       # 类型定义（可选）
+```
+
+### 4.2 主视图文件（index.vue）开发规范
+
+#### 4.2.1 基础结构模板
+
+```vue
+<script setup lang="ts">
+import { ref } from "vue";
+import { use[ModuleName] } from "./utils/hook";
+import { PureTableBar } from "@/components/RePureTableBar";
+import { useRenderIcon } from "@/components/ReIcon/src/hooks";
+// 导入必要的图标
+import Delete from "~icons/ep/delete";
+import EditPen from "~icons/ep/edit-pen";
+import Refresh from "~icons/ep/refresh";
+import AddFill from "~icons/ri/add-circle-line";
+
+defineOptions({
+  name: "[ModuleName]Management"
+});
+
+const formRef = ref();
+const tableRef = ref();
+
+// 解构业务逻辑钩子
+const {
+  form,
+  loading,
+  columns,
+  dataList,
+  selectedRows,
+  hasSelection,
+  handleSelectionChange,
+  resetForm,
+  onSearch,
+  openDialog,
+  handleDelete,
+  handleBatchDelete
+} = use[ModuleName]();
+
+const onFullscreen = () => {
+  tableRef.value.setAdaptive();
+};
+</script>
+
+<template>
+  <div class="main">
+    <!-- 搜索表单区域 -->
+    <el-form
+      ref="formRef"
+      :inline="true"
+      :model="form"
+      class="search-form bg-bg_color w-full pl-8 pt-[12px] overflow-auto"
+    >
+      <!-- 搜索字段 -->
+      <el-form-item label="名称：" prop="name">
+        <el-input
+          v-model="form.name"
+          placeholder="请输入名称"
+          clearable
+          class="!w-[200px]"
+        />
+      </el-form-item>
+
+      <!-- 操作按钮 -->
+      <el-form-item>
+        <el-button
+          type="primary"
+          :icon="useRenderIcon('ri:search-line')"
+          :loading="loading"
+          @click="onSearch"
+        >
+          搜索
+        </el-button>
+        <el-button :icon="useRenderIcon(Refresh)" @click="resetForm">
+          重置
+        </el-button>
+      </el-form-item>
+    </el-form>
+
+    <!-- 表格工具栏 -->
+    <PureTableBar title="数据列表" :columns="columns" @refresh="onSearch">
+      <template #buttons>
+        <el-button
+          type="primary"
+          :icon="useRenderIcon(AddFill)"
+          @click="openDialog()"
+        >
+          新增
+        </el-button>
+        <el-button
+          type="danger"
+          :icon="useRenderIcon(Delete)"
+          :disabled="!hasSelection"
+          @click="handleBatchDelete"
+        >
+          批量删除
+        </el-button>
+      </template>
+
+      <template v-slot="{ size, dynamicColumns }">
+        <pure-table
+          ref="tableRef"
+          adaptive
+          :adaptiveConfig="{ offsetBottom: 108 }"
+          align-whole="center"
+          table-layout="auto"
+          :loading="loading"
+          :size="size"
+          :data="dataList"
+          :columns="dynamicColumns"
+          :pagination="false"
+          :paginationSmall="size === 'small'"
+          :header-cell-style="{
+            background: 'var(--el-fill-color-lighter)',
+            color: 'var(--el-text-color-primary)'
+          }"
+          row-key="id"
+          @selection-change="handleSelectionChange"
+        >
+          <!-- 操作列插槽 -->
+          <template #operation="{ row }">
+            <el-button
+              class="reset-margin"
+              link
+              type="primary"
+              :size="size"
+              :icon="useRenderIcon(EditPen)"
+              @click="openDialog('编辑', row)"
+            >
+              修改
+            </el-button>
+            <el-button
+              class="reset-margin"
+              link
+              type="primary"
+              :size="size"
+              :icon="useRenderIcon(AddFill)"
+              @click="openDialog('新增', null, row)"
+            >
+              新增
+            </el-button>
+            <el-popconfirm
+              :title="`是否确认删除名称为${row.name}的这条数据`"
+              @confirm="handleDelete(row)"
+            >
+              <template #reference>
+                <el-button
+                  class="reset-margin"
+                  link
+                  type="primary"
+                  :size="size"
+                  :icon="useRenderIcon(Delete)"
+                >
+                  删除
+                </el-button>
+              </template>
+            </el-popconfirm>
+          </template>
+        </pure-table>
+      </template>
+    </PureTableBar>
+  </div>
+</template>
+```
+
+#### 4.2.2 关键要素说明
+
+1. **组件命名**：使用 `defineOptions` 定义组件名称，格式为 `[ModuleName]Management`
+2. **引用管理**：统一使用 `formRef` 和 `tableRef` 管理表单和表格引用
+3. **业务逻辑分离**：所有业务逻辑通过 `use[ModuleName]()` 钩子管理
+4. **图标使用**：统一使用 `useRenderIcon` 渲染图标
+5. **操作列**：必须设置 `slot="operation"` 才能显示操作按钮
+
+### 4.3 业务逻辑钩子（utils/hook.tsx）开发规范
+
+#### 4.3.1 基础结构模板
+
+```tsx
+import { ref, reactive, computed, h, onMounted } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { formatDateTime } from "@/utils/dateTime";
+import { addDialog } from "@/components/ReDialog";
+import {
+  // API 方法导入
+  get[ModuleName]List,
+  create[ModuleName],
+  update[ModuleName],
+  delete[ModuleName],
+  batchDelete[ModuleName]s,
+  type [ModuleName]Type
+} from "@/api/system/[module_api]";
+import [ModuleName]Form from "../form/index.vue";
+
+export function use[ModuleName]() {
+  // 1. 状态定义
+  const form = reactive({
+    name: "",
+    // 其他搜索字段
+  });
+
+  const formRef = ref();
+  const dataList = ref<[ModuleName]Type[]>([]);
+  const loading = ref(false);
+  const selectedRows = ref<[ModuleName]Type[]>([]);
+
+  // 2. 表格列配置
+  const columns: TableColumnList = [
+    {
+      type: "selection",
+      width: 55,
+      align: "center",
+      hide: false
+    },
+    {
+      label: "序号",
+      type: "index",
+      width: 70,
+      hide: false
+    },
+    // 业务字段列
+    {
+      label: "名称",
+      prop: "name",
+      minWidth: 150
+    },
+    {
+      label: "创建时间",
+      prop: "created_at",
+      width: 180,
+      formatter: (row: [ModuleName]Type) => formatDateTime(row.created_at)
+    },
+    {
+      label: "更新时间",
+      prop: "updated_at",
+      width: 180,
+      formatter: (row: [ModuleName]Type) => formatDateTime(row.updated_at)
+    },
+    {
+      label: "操作",
+      prop: "operation",
+      width: 210,
+      fixed: "right",
+      slot: "operation" // 必须设置此属性
+    }
+  ];
+
+  // 3. 计算属性
+  const hasSelection = computed(() => selectedRows.value.length > 0);
+
+  // 4. 基础方法
+  const resetForm = () => {
+    Object.keys(form).forEach(key => {
+      form[key] = "";
+    });
+  };
+
+  const onSearch = async () => {
+    try {
+      loading.value = true;
+      const { data } = await get[ModuleName]List();
+      dataList.value = data.items || [];
+    } catch (error) {
+      console.error("获取列表失败:", error);
+      ElMessage.error("获取列表失败");
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const handleSelectionChange = (selection: [ModuleName]Type[]) => {
+    selectedRows.value = selection;
+  };
+
+  // 5. 对话框操作
+  const openDialog = (title = "新增", row?: [ModuleName]Type, parent?: [ModuleName]Type) => {
+    addDialog({
+      title: `${title}[模块名称]`,
+      props: {
+        formInline: {
+          id: row?.id ?? null,
+          parent_id: parent?.id ?? row?.parent_id ?? null,
+          // 其他字段
+        }
+      },
+      width: "40%",
+      draggable: true,
+      fullscreen: false,
+      fullscreenIcon: true,
+      closeOnClickModal: false,
+      contentRenderer: () => h([ModuleName]Form, { ref: formRef }),
+      beforeSure: (done, { options }) => {
+        const FormRef = formRef.value.getRef();
+        const curData = options.props.formInline as [ModuleName]Type;
+
+        FormRef.validate(async valid => {
+          if (valid) {
+            try {
+              if (curData.id) {
+                await update[ModuleName](curData.id, curData);
+                ElMessage.success("更新成功");
+              } else {
+                await create[ModuleName](curData);
+                ElMessage.success("新增成功");
+              }
+              done();
+              onSearch();
+            } catch (error) {
+              console.error("操作失败:", error);
+            }
+          }
+        });
+      }
+    });
+  };
+
+  // 6. 删除操作
+  const handleDelete = async (row: [ModuleName]Type) => {
+    try {
+      await delete[ModuleName](row.id);
+      ElMessage.success("删除成功");
+      onSearch();
+    } catch (error) {
+      console.error("删除失败:", error);
+      ElMessage.error("删除失败");
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedRows.value.length === 0) {
+      ElMessage.warning("请选择要删除的数据");
+      return;
+    }
+
+    try {
+      await ElMessageBox.confirm(
+        `确认删除选中的 ${selectedRows.value.length} 条数据吗？`,
+        "批量删除确认",
+        {
+          type: "warning"
+        }
+      );
+
+      const ids = selectedRows.value.map(row => row.id);
+      await batchDelete[ModuleName]s(ids);
+      ElMessage.success("批量删除成功");
+      selectedRows.value = [];
+      onSearch();
+    } catch (error) {
+      if (error !== "cancel") {
+        console.error("批量删除失败:", error);
+        ElMessage.error("批量删除失败");
+      }
+    }
+  };
+
+  // 7. 生命周期
+  onMounted(() => {
+    onSearch();
+  });
+
+  // 8. 返回值
+  return {
+    form,
+    loading,
+    columns,
+    dataList,
+    selectedRows,
+    hasSelection,
+    handleSelectionChange,
+    resetForm,
+    onSearch,
+    openDialog,
+    handleDelete,
+    handleBatchDelete
+  };
+}
+```
+
+#### 4.3.2 关键规范说明
+
+1. **状态管理**：使用 `reactive` 管理表单状态，`ref` 管理列表数据
+2. **表格列配置**：必须包含 `selection`、`index`、业务字段、时间字段、操作列
+3. **操作列配置**：必须设置 `slot: "operation"` 属性
+4. **错误处理**：统一使用 `try-catch` 处理异步操作
+5. **消息提示**：使用 `ElMessage` 提供用户反馈
+6. **对话框管理**：使用 `addDialog` 统一管理弹窗
+7. **生命周期**：在 `onMounted` 中初始化数据
+
+### 4.4 表单组件（form/index.vue）开发规范
+
+#### 4.4.1 基础结构模板
+
+```vue
+<script setup lang="ts">
+import { ref, computed } from "vue";
+import { ElMessage } from "element-plus";
+
+interface FormProps {
+  formInline: {
+    id?: number;
+    parent_id?: number;
+    name: string;
+    // 其他字段
+  };
+}
+
+interface FormEmits {
+  (e: "update:formInline", val: FormProps["formInline"]): void;
+}
+
+const props = withDefaults(defineProps<FormProps>(), {
+  formInline: () => ({
+    id: null,
+    parent_id: null,
+    name: ""
+    // 其他字段默认值
+  })
+});
+
+const emit = defineEmits<FormEmits>();
+
+const ruleFormRef = ref();
+const newFormInline = ref(props.formInline);
+
+// 表单验证规则
+const rules = {
+  name: [{ required: true, message: "名称为必填项", trigger: "blur" }]
+  // 其他验证规则
+};
+
+// 计算属性
+const formTitle = computed(() => {
+  return newFormInline.value.id ? "编辑" : "新增";
+});
+
+// 获取表单引用
+function getRef() {
+  return ruleFormRef.value;
+}
+
+// 暴露方法
+defineExpose({ getRef });
+</script>
+
+<template>
+  <el-form
+    ref="ruleFormRef"
+    :model="newFormInline"
+    :rules="rules"
+    label-width="100px"
+  >
+    <el-form-item label="名称" prop="name">
+      <el-input
+        v-model="newFormInline.name"
+        clearable
+        placeholder="请输入名称"
+      />
+    </el-form-item>
+
+    <!-- 其他表单项 -->
+  </el-form>
+</template>
+```
+
+### 4.5 开发检查清单
+
+#### 4.5.1 文件结构检查
+
+- [ ] 目录结构符合标准（index.vue、form/index.vue、utils/hook.tsx）
+- [ ] 文件命名规范正确
+- [ ] 导入语句完整且有序
+
+#### 4.5.2 主视图文件检查
+
+- [ ] 组件名称使用 `defineOptions` 定义
+- [ ] 正确解构业务逻辑钩子
+- [ ] 搜索表单结构完整
+- [ ] 表格工具栏配置正确
+- [ ] 操作列插槽实现完整
+- [ ] 图标使用 `useRenderIcon` 渲染
+
+#### 4.5.3 业务逻辑钩子检查
+
+- [ ] 状态定义完整（form、loading、dataList、selectedRows）
+- [ ] 表格列配置包含所有必要列
+- [ ] 操作列设置了 `slot: "operation"` 属性
+- [ ] 基础方法实现完整（resetForm、onSearch、handleSelectionChange）
+- [ ] 对话框操作实现完整（openDialog）
+- [ ] 删除操作实现完整（handleDelete、handleBatchDelete）
+- [ ] 错误处理和用户反馈完善
+- [ ] 生命周期钩子正确使用
+- [ ] 返回值包含所有必要的状态和方法
+
+#### 4.5.4 表单组件检查
+
+- [ ] Props 和 Emits 类型定义正确
+- [ ] 表单验证规则完整
+- [ ] 表单引用正确暴露
+- [ ] 表单项配置完整
+
+### 4.6 最佳实践建议
+
+1. **代码复用**：新模块可以直接复制现有模块代码，然后修改相关字段和 API 调用
+2. **类型安全**：充分利用 TypeScript 类型系统，确保类型安全
+3. **错误处理**：统一错误处理模式，提供良好的用户体验
+4. **性能优化**：合理使用 `computed` 和 `watch`，避免不必要的重复计算
+5. **可维护性**：保持代码结构清晰，注释完善，便于后续维护
+6. **测试友好**：保持组件的单一职责，便于单元测试
+
+通过遵循以上规范，可以确保所有 CRUD 模块具有一致的代码风格和结构，提高开发效率和代码质量。
+
+---
+
+## 7. 表单验证规范
+
+### 7.1 验证规则统一管理
+
+**核心原则**：所有表单验证规则必须在 `utils/rules.ts` 文件中统一定义，禁止在组件中直接定义验证规则。
+
+#### 7.1.1 规则文件结构
+
+```typescript
+// src/views/system/user/utils/rules.ts
+import type { FormRules } from "element-plus";
+
+// 用户表单验证规则
+export const userFormRules = reactive<FormRules>({
+  username: [
+    { required: true, message: "用户名为必填项", trigger: "blur" },
+    { min: 3, max: 20, message: "用户名长度在 3 到 20 个字符", trigger: "blur" }
+  ],
+  email: [
+    { required: true, message: "邮箱为必填项", trigger: "blur" },
+    { type: "email", message: "请输入正确的邮箱地址", trigger: "blur" }
+  ],
+  password: [
+    { required: true, message: "密码为必填项", trigger: "blur" },
+    { min: 6, max: 20, message: "密码长度在 6 到 20 个字符", trigger: "blur" }
+  ]
+});
+
+// 分配角色验证规则
+export const assignRoleRules = reactive<FormRules>({
+  roleIds: [
+    { required: true, message: "请选择至少一个角色", trigger: "change" },
+    {
+      validator: (rule, value, callback) => {
+        if (!value || value.length === 0) {
+          callback(new Error("请选择至少一个角色"));
+        } else {
+          callback();
+        }
+      },
+      trigger: "change"
+    }
+  ]
+});
+
+// 动态规则生成函数
+export const createPasswordRules = (isEdit: boolean = false) => {
+  const rules = {
+    password: [
+      { min: 6, max: 20, message: "密码长度在 6 到 20 个字符", trigger: "blur" }
+    ]
+  };
+
+  if (!isEdit) {
+    rules.password.unshift({
+      required: true,
+      message: "密码为必填项",
+      trigger: "blur"
+    });
+  }
+
+  return rules;
+};
+```
+
+#### 7.1.2 验证规则使用规范
+
+```vue
+<!-- 正确的使用方式 -->
+<script setup lang="ts">
+import { userFormRules } from "../utils/rules";
+
+// 直接使用导入的规则
+const rules = userFormRules;
+</script>
+
+<template>
+  <el-form :model="formData" :rules="rules">
+    <!-- 表单项 -->
+  </el-form>
+</template>
+```
+
+### 7.2 表单验证最佳实践
+
+#### 7.2.1 验证时机
+
+- **实时验证**：使用 `trigger: "blur"` 进行失焦验证
+- **提交验证**：在表单提交前进行完整验证
+- **动态验证**：根据业务逻辑动态调整验证规则
+
+#### 7.2.2 自定义验证器
+
+```typescript
+// 自定义验证器示例
+const validatePhone = (rule: any, value: string, callback: Function) => {
+  const phoneRegex = /^1[3-9]\d{9}$/;
+  if (value && !phoneRegex.test(value)) {
+    callback(new Error("请输入正确的手机号码"));
+  } else {
+    callback();
+  }
+};
+
+export const contactRules = reactive<FormRules>({
+  phone: [{ validator: validatePhone, trigger: "blur" }]
+});
+```
+
+#### 7.2.3 表单验证错误处理
+
+```typescript
+// 在 hook.tsx 中的验证处理
+const handleSubmit = async () => {
+  try {
+    const formRef = getFormRef();
+    const valid = await formRef.validate();
+
+    if (valid) {
+      // 执行提交逻辑
+      await submitForm();
+      ElMessage.success("操作成功");
+    }
+  } catch (error) {
+    // 验证失败时的处理
+    console.error("表单验证失败:", error);
+    ElMessage.error("请检查表单输入");
+  }
+};
+```
+
+---
+
+## 8. API接口规范
+
+### 8.1 API文件组织结构
+
+```
+src/api/
+├── system/
+│   ├── user.ts          # 用户相关接口
+│   ├── role.ts          # 角色相关接口
+│   ├── menu.ts          # 菜单相关接口
+│   └── dept.ts          # 部门相关接口
+├── monitor/
+│   └── log.ts           # 日志相关接口
+└── index.ts             # API统一导出
+```
+
+### 8.2 API接口定义规范
+
+#### 8.2.1 基础接口模板
+
+```typescript
+// src/api/system/user.ts
+import { http } from "@/utils/http";
+import type { Result, PageResult } from "@/types/api";
+
+// 类型定义
+export interface UserType {
+  id?: number;
+  username: string;
+  email: string;
+  full_name: string;
+  dept_id?: number;
+  status: number;
+  is_mfa_enabled: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface UserQueryParams {
+  page?: number;
+  page_size?: number;
+  username?: string;
+  email?: string;
+  dept_id?: number;
+  status?: number;
+}
+
+// API接口定义
+export const getUserList = (params?: UserQueryParams) => {
+  return http.get<PageResult<UserType>>("/api/users", { params });
+};
+
+export const getUserById = (id: number) => {
+  return http.get<Result<UserType>>(`/api/users/${id}`);
+};
+
+export const createUser = (
+  data: Omit<UserType, "id" | "created_at" | "updated_at">
+) => {
+  return http.post<Result<UserType>>("/api/users", data);
+};
+
+export const updateUser = (id: number, data: Partial<UserType>) => {
+  return http.put<Result<UserType>>(`/api/users/${id}`, data);
+};
+
+export const deleteUser = (id: number) => {
+  return http.delete<Result<null>>(`/api/users/${id}`);
+};
+
+export const batchDeleteUsers = (ids: number[]) => {
+  return http.delete<Result<null>>("/api/users/batch", { data: { ids } });
+};
+
+// 特殊操作接口
+export const resetUserPassword = (id: number, password: string) => {
+  return http.post<Result<null>>(`/api/users/${id}/reset-password`, {
+    password
+  });
+};
+
+export const assignRolesToUser = (userId: number, roleIds: number[]) => {
+  return http.post<Result<null>>(`/api/users/${userId}/roles`, {
+    role_ids: roleIds
+  });
+};
+
+export const getUserRoles = (userId: number) => {
+  return http.get<Result<number[]>>(`/api/users/${userId}/roles`);
+};
+```
+
+#### 8.2.2 API命名规范
+
+- **获取列表**：`get[Entity]List`
+- **获取详情**：`get[Entity]ById`
+- **创建**：`create[Entity]`
+- **更新**：`update[Entity]`
+- **删除**：`delete[Entity]`
+- **批量删除**：`batchDelete[Entity]s`
+- **特殊操作**：使用动词+名词形式，如 `resetUserPassword`
+
+### 8.3 API响应类型规范
+
+```typescript
+// src/types/api.ts
+export interface Result<T = any> {
+  code: number;
+  message: string;
+  data: T;
+}
+
+export interface PageResult<T = any> {
+  code: number;
+  message: string;
+  data: {
+    items: T[];
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+  };
+}
+
+export interface ApiError {
+  code: number;
+  message: string;
+  details?: any;
+}
+```
+
+---
+
+## 9. 错误处理规范
+
+### 9.1 统一错误处理机制
+
+#### 9.1.1 HTTP拦截器错误处理
+
+```typescript
+// src/utils/http/index.ts
+import { ElMessage, ElMessageBox } from "element-plus";
+import { useUserStoreHook } from "@/store/modules/user";
+
+// 响应拦截器
+instance.interceptors.response.use(
+  response => {
+    const { code, message } = response.data;
+
+    // 业务错误处理
+    if (code !== 200) {
+      ElMessage.error(message || "请求失败");
+      return Promise.reject(new Error(message || "请求失败"));
+    }
+
+    return response.data;
+  },
+  error => {
+    const { response } = error;
+
+    if (response) {
+      const { status, data } = response;
+
+      switch (status) {
+        case 401:
+          ElMessage.error("登录已过期，请重新登录");
+          useUserStoreHook().logOut();
+          break;
+        case 403:
+          ElMessage.error("没有权限访问该资源");
+          break;
+        case 404:
+          ElMessage.error("请求的资源不存在");
+          break;
+        case 500:
+          ElMessage.error("服务器内部错误");
+          break;
+        default:
+          ElMessage.error(data?.message || "请求失败");
+      }
+    } else {
+      ElMessage.error("网络连接失败");
+    }
+
+    return Promise.reject(error);
+  }
+);
+```
+
+#### 9.1.2 业务层错误处理
+
+```typescript
+// 在 hook.tsx 中的错误处理模式
+const handleApiCall = async <T>(
+  apiCall: () => Promise<T>,
+  successMessage?: string,
+  errorMessage?: string
+): Promise<T | null> => {
+  try {
+    loading.value = true;
+    const result = await apiCall();
+
+    if (successMessage) {
+      ElMessage.success(successMessage);
+    }
+
+    return result;
+  } catch (error) {
+    console.error("API调用失败:", error);
+
+    if (errorMessage) {
+      ElMessage.error(errorMessage);
+    } else if (error instanceof Error) {
+      ElMessage.error(error.message);
+    } else {
+      ElMessage.error("操作失败");
+    }
+
+    return null;
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 使用示例
+const onSearch = async () => {
+  const result = await handleApiCall(
+    () => getUserList(form),
+    undefined, // 不显示成功消息
+    "获取用户列表失败"
+  );
+
+  if (result) {
+    dataList.value = result.data.items || [];
+  }
+};
+```
+
+### 9.2 表单验证错误处理
+
+```typescript
+// 表单提交错误处理
+const handleSubmit = async () => {
+  try {
+    // 1. 表单验证
+    const formRef = getFormRef();
+    await formRef.validate();
+
+    // 2. 业务验证
+    if (!validateBusinessRules()) {
+      throw new Error("业务规则验证失败");
+    }
+
+    // 3. API调用
+    await submitData();
+
+    ElMessage.success("操作成功");
+    closeDialog();
+  } catch (error) {
+    if (error instanceof Error) {
+      // 已知错误
+      ElMessage.error(error.message);
+    } else {
+      // 未知错误
+      console.error("提交失败:", error);
+      ElMessage.error("提交失败，请重试");
+    }
+  }
+};
+```
+
+---
+
+## 10. 性能优化规范
+
+### 10.1 组件性能优化
+
+#### 10.1.1 合理使用响应式数据
+
+```typescript
+// ✅ 正确：只对需要响应式的数据使用 ref/reactive
+const form = reactive({
+  username: "",
+  email: ""
+});
+
+const loading = ref(false);
+const dataList = ref<UserType[]>([]);
+
+// ❌ 错误：不需要响应式的常量使用 ref
+const API_URL = ref("/api/users"); // 应该使用普通常量
+
+// ✅ 正确：使用普通常量
+const API_URL = "/api/users";
+```
+
+#### 10.1.2 计算属性优化
+
+```typescript
+// ✅ 正确：使用计算属性缓存复杂计算
+const filteredData = computed(() => {
+  return dataList.value.filter(item =>
+    item.username.includes(searchKeyword.value)
+  );
+});
+
+// ❌ 错误：在模板中进行复杂计算
+// <div v-for="item in dataList.filter(i => i.username.includes(searchKeyword))">
+```
+
+#### 10.1.3 组件懒加载
+
+```typescript
+// 路由懒加载
+const routes = [
+  {
+    path: "/user",
+    component: () => import("@/views/system/user/index.vue")
+  }
+];
+
+// 组件懒加载
+const UserForm = defineAsyncComponent(() => import("./form/index.vue"));
+```
+
+### 10.2 表格性能优化
+
+#### 10.2.1 虚拟滚动
+
+```vue
+<!-- 大数据量表格使用虚拟滚动 -->
+<pure-table
+  :data="dataList"
+  :columns="columns"
+  virtual-scroll
+  :virtual-scroll-option="{
+    itemSize: 60,
+    visibleCount: 20
+  }"
+/>
+```
+
+#### 10.2.2 分页优化
+
+```typescript
+// 合理的分页配置
+const pagination = reactive({
+  page: 1,
+  pageSize: 20, // 不要设置过大
+  total: 0
+});
+
+// 防抖搜索
+const debouncedSearch = debounce(onSearch, 300);
+```
+
+### 10.3 内存优化
+
+#### 10.3.1 及时清理定时器和监听器
+
+```typescript
+import { onUnmounted } from "vue";
+
+const timer = setInterval(() => {
+  // 定时任务
+}, 1000);
+
+// 组件卸载时清理
+onUnmounted(() => {
+  if (timer) {
+    clearInterval(timer);
+  }
+});
+```
+
+#### 10.3.2 避免内存泄漏
+
+```typescript
+// ✅ 正确：使用 shallowRef 处理大对象
+const largeData = shallowRef<any[]>([]);
+
+// ✅ 正确：及时清理大数据
+const clearData = () => {
+  dataList.value = [];
+  selectedRows.value = [];
+};
+
+onUnmounted(() => {
+  clearData();
+});
+```
+
+---
+
+## 11. 代码质量规范
+
+### 11.1 TypeScript使用规范
+
+#### 11.1.1 类型定义
+
+```typescript
+// ✅ 正确：明确的类型定义
+interface UserFormData {
+  id?: number;
+  username: string;
+  email: string;
+  status: 0 | 1; // 使用字面量类型
+}
+
+// ✅ 正确：使用泛型
+interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data: T;
+}
+
+// ❌ 错误：使用 any 类型
+const userData: any = {};
+
+// ✅ 正确：使用具体类型
+const userData: UserFormData = {
+  username: "",
+  email: "",
+  status: 1
+};
+```
+
+#### 11.1.2 函数类型定义
+
+```typescript
+// ✅ 正确：明确的函数签名
+const handleDelete = async (id: number): Promise<void> => {
+  await deleteUser(id);
+};
+
+// ✅ 正确：使用类型断言
+const formRef = ref<FormInstance>();
+
+// ✅ 正确：事件处理器类型
+const handleSelectionChange = (selection: UserType[]): void => {
+  selectedRows.value = selection;
+};
+```
+
+### 11.2 代码注释规范
+
+#### 11.2.1 函数注释
+
+```typescript
+/**
+ * 获取用户列表
+ * @param params 查询参数
+ * @returns 用户列表数据
+ */
+const getUserList = async (
+  params?: UserQueryParams
+): Promise<PageResult<UserType>> => {
+  return await http.get("/api/users", { params });
+};
+
+/**
+ * 打开用户编辑对话框
+ * @param title 对话框标题
+ * @param row 编辑的用户数据，为空时表示新增
+ */
+const openDialog = (title: string = "新增", row?: UserType): void => {
+  // 实现逻辑
+};
+```
+
+#### 11.2.2 复杂逻辑注释
+
+```typescript
+// 处理角色分配逻辑
+const handleRoleAssignment = async (userId: number, roleIds: number[]) => {
+  try {
+    // 1. 验证用户是否存在
+    const user = await getUserById(userId);
+    if (!user) {
+      throw new Error("用户不存在");
+    }
+
+    // 2. 验证角色权限（只能分配当前用户有权限的角色）
+    const availableRoles = await getAvailableRoles();
+    const invalidRoles = roleIds.filter(
+      id => !availableRoles.some(role => role.id === id)
+    );
+
+    if (invalidRoles.length > 0) {
+      throw new Error("包含无权限分配的角色");
+    }
+
+    // 3. 执行角色分配
+    await assignRolesToUser(userId, roleIds);
+
+    ElMessage.success("角色分配成功");
+  } catch (error) {
+    console.error("角色分配失败:", error);
+    ElMessage.error(error.message || "角色分配失败");
+  }
+};
+```
+
+### 11.3 代码组织规范
+
+#### 11.3.1 导入顺序
+
+```typescript
+// 1. Vue相关导入
+import { ref, reactive, computed, onMounted } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+
+// 2. 第三方库导入
+import { debounce } from "lodash-es";
+
+// 3. 项目内部导入
+import { formatDateTime } from "@/utils/dateTime";
+import { addDialog } from "@/components/ReDialog";
+import { getUserList, createUser } from "@/api/system/user";
+import type { UserType } from "@/api/system/user";
+
+// 4. 相对路径导入
+import UserForm from "../form/index.vue";
+import { userFormRules } from "../utils/rules";
+```
+
+#### 11.3.2 代码分组
+
+```typescript
+export function useUser() {
+  // ==================== 状态定义 ====================
+  const form = reactive({
+    username: "",
+    email: ""
+  });
+
+  const loading = ref(false);
+  const dataList = ref<UserType[]>([]);
+
+  // ==================== 计算属性 ====================
+  const hasSelection = computed(() => selectedRows.value.length > 0);
+
+  // ==================== 方法定义 ====================
+  const onSearch = async () => {
+    // 实现逻辑
+  };
+
+  const handleDelete = async (row: UserType) => {
+    // 实现逻辑
+  };
+
+  // ==================== 生命周期 ====================
+  onMounted(() => {
+    onSearch();
+  });
+
+  // ==================== 返回值 ====================
+  return {
+    form,
+    loading,
+    dataList,
+    hasSelection,
+    onSearch,
+    handleDelete
+  };
+}
+```
+
+### 11.4 测试规范
+
+#### 11.4.1 单元测试
+
+```typescript
+// tests/views/system/user/hook.test.ts
+import { describe, it, expect, vi } from "vitest";
+import { useUser } from "@/views/system/user/utils/hook";
+
+describe("useUser", () => {
+  it("should initialize with empty form", () => {
+    const { form } = useUser();
+
+    expect(form.username).toBe("");
+    expect(form.email).toBe("");
+  });
+
+  it("should handle search correctly", async () => {
+    const { onSearch, loading } = useUser();
+
+    await onSearch();
+
+    expect(loading.value).toBe(false);
+  });
+});
+```
+
+### 11.5 代码审查清单
+
+#### 11.5.1 功能性检查
+
+- [ ] 功能实现完整且正确
+- [ ] 错误处理完善
+- [ ] 边界条件考虑周全
+- [ ] 用户体验良好
+
+#### 11.5.2 代码质量检查
+
+- [ ] 类型定义明确，避免使用 `any`
+- [ ] 函数职责单一，复杂度合理
+- [ ] 变量命名清晰，符合规范
+- [ ] 注释完善，逻辑清晰
+
+#### 11.5.3 性能检查
+
+- [ ] 避免不必要的重复渲染
+- [ ] 合理使用计算属性和监听器
+- [ ] 内存使用合理，无泄漏风险
+- [ ] 网络请求优化，避免重复调用
+
+#### 11.5.4 安全检查
+
+- [ ] 输入验证完善
+- [ ] 权限控制正确
+- [ ] 敏感信息保护
+- [ ] XSS和CSRF防护
