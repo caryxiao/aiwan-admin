@@ -21,3 +21,4 @@ tests/**/coverage/
 *.sln
 tsconfig.tsbuildinfo
 /apifox
+/vue-pure-admin
