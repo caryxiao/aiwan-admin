@@ -1,166 +1,203 @@
 <template>
   <div class="main">
-    <!-- 搜索栏 -->
-    <SearchForm
-      v-model:search-value="searchValue"
-      @search="handleSearch"
-      @reset="handleResetSearch"
-    />
-
-    <!-- 表格卡片 -->
-    <el-card shadow="never" class="table-card">
-      <template #header>
-        <TableToolbar
-          :has-selection="hasSelection"
-          @create="openCreateDialog"
-          @batch-delete="handleBatchDelete"
-          @export="handleExport"
-          @refresh="refresh"
+    <el-form
+      ref="formRef"
+      :inline="true"
+      :model="form"
+      class="search-form bg-bg_color w-full pl-8 pt-[12px] overflow-auto"
+    >
+      <el-form-item label="用户状态：" prop="status">
+        <el-select
+          v-model="form.status"
+          placeholder="请选择状态"
+          clearable
+          class="w-[180px]!"
+        >
+          <el-option label="启用" :value="true" />
+          <el-option label="禁用" :value="false" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="搜索：" prop="search">
+        <el-input
+          v-model="form.search"
+          placeholder="请输入用户名或邮箱"
+          clearable
+          class="w-[240px]!"
         />
+      </el-form-item>
+      <el-form-item>
+        <el-button
+          type="primary"
+          :icon="useRenderIcon('ri/search-line')"
+          :loading="loading"
+          @click="onSearch"
+        >
+          搜索
+        </el-button>
+        <el-button :icon="useRenderIcon(Refresh)" @click="resetForm()">
+          重置
+        </el-button>
+      </el-form-item>
+    </el-form>
+
+    <PureTableBar
+      title="用户管理"
+      :columns="columns"
+      :tableRef="tableRef?.getTableRef()"
+      @refresh="onSearch"
+      @fullscreen="onFullscreen"
+    >
+      <template #buttons>
+        <el-button
+          type="primary"
+          :icon="useRenderIcon(AddFill)"
+          @click="openDialog()"
+        >
+          新增用户
+        </el-button>
+        <el-button
+          type="danger"
+          :icon="useRenderIcon(Delete)"
+          :disabled="!hasSelection"
+          @click="handleBatchDelete"
+        >
+          批量删除
+        </el-button>
       </template>
-
-      <!-- 数据表格 -->
-      <UserTable
-        :loading="loading"
-        :table-data="tableData"
-        :pagination="pagination"
-        :switch-load-map="switchLoadMap"
-        :format-date-time="formatDateTime"
-        @selection-change="handleSelectionChange"
-        @page-change="handlePageChange"
-        @page-size-change="handlePageSizeChange"
-        @edit="openEditDialog"
-        @reset-password="handleResetPassword"
-        @delete="handleDelete"
-        @status-change="handleStatusChange"
-        @assign-roles="handleAssignRoles"
-      />
-    </el-card>
-
-    <!-- 用户表单对话框 -->
-    <UserForm
-      v-model:visible="dialogVisible"
-      :formData="formData"
-      :title="dialogTitle"
-      :is-edit="isEdit"
-      :loading="submitLoading"
-      :form-rules="formRules"
-      :department-options="departmentOptions"
-      @close="closeDialog"
-      @cancel="closeDialog"
-      @submit="handleSubmit"
-    />
-
-    <!-- 重置密码对话框 -->
-    <PasswordResetForm
-      ref="passwordFormRef"
-      v-model:visible="passwordDialogVisible"
-      :loading="passwordSubmitLoading"
-      @close="
-        () => {
-          passwordDialogVisible = false;
-        }
-      "
-      @submit="formData => handlePasswordSubmit(formData)"
-    />
-
-    <AssignRoleForm
-      v-if="assignRoleDialogVisible"
-      v-model:visible="assignRoleDialogVisible"
-      :currentAssignUser="currentAssignUser"
-      @close="assignRoleDialogVisible = false"
-      @submit="handleAssignRolesSubmit"
-    />
+      <template v-slot="{ size, dynamicColumns }">
+        <pure-table
+          ref="tableRef"
+          adaptive
+          :adaptiveConfig="{ offsetBottom: 45 }"
+          align-whole="center"
+          row-key="id"
+          showOverflowTooltip
+          table-layout="auto"
+          :loading="loading"
+          :size="size"
+          :data="dataList"
+          :columns="dynamicColumns"
+          :header-cell-style="{
+            background: 'var(--el-fill-color-light)',
+            color: 'var(--el-text-color-primary)'
+          }"
+          @selection-change="handleSelectionChange"
+        >
+          <template #operation="{ row }">
+            <el-button
+              class="reset-margin"
+              link
+              type="primary"
+              :size="size"
+              :icon="useRenderIcon(EditPen)"
+              @click="openDialog('编辑用户', row)"
+            >
+              编辑
+            </el-button>
+            <el-popconfirm
+              :title="`是否确认删除用户${row.username}？`"
+              @confirm="handleDelete(row)"
+            >
+              <template #reference>
+                <el-button
+                  class="reset-margin"
+                  link
+                  type="primary"
+                  :size="size"
+                  :icon="useRenderIcon(Delete)"
+                >
+                  删除
+                </el-button>
+              </template>
+            </el-popconfirm>
+            <el-dropdown>
+              <el-button
+                class="ml-3! mt-[2px]!"
+                link
+                type="primary"
+                :size="size"
+                :icon="useRenderIcon(More)"
+              />
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item>
+                    <el-button
+                      class="reset-margin"
+                      link
+                      type="primary"
+                      :size="size"
+                      :icon="useRenderIcon(Password)"
+                      @click="openPasswordDialog(row)"
+                    >
+                      重置密码
+                    </el-button>
+                  </el-dropdown-item>
+                  <el-dropdown-item>
+                    <el-button
+                      class="reset-margin"
+                      link
+                      type="primary"
+                      :size="size"
+                      :icon="useRenderIcon(Role)"
+                      @click="openAssignRoleDialog(row)"
+                    >
+                      分配角色
+                    </el-button>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
+        </pure-table>
+      </template>
+    </PureTableBar>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from "vue";
 import { useUser } from "./utils/hook";
-import SearchForm from "./components/SearchForm.vue";
-import TableToolbar from "./components/TableToolbar.vue";
-import UserTable from "./components/UserTable.vue";
-import UserForm from "./form/index.vue";
-import PasswordResetForm from "./form/password.vue";
-import AssignRoleForm from "./components/AssignRoleForm.vue";
+import { PureTableBar } from "@/components/RePureTableBar";
+import { useRenderIcon } from "@/components/ReIcon/src/hooks";
+import Delete from "~icons/ep/delete";
+import EditPen from "~icons/ep/edit-pen";
+import Refresh from "~icons/ep/refresh";
+import AddFill from "~icons/ri/add-circle-line";
+import More from "~icons/ep/more-filled";
+import Password from "~icons/ri/lock-password-line";
+import Role from "~icons/ri/admin-line";
 
 defineOptions({
-  name: "SystemUser"
+  name: "UserManagement"
 });
 
-// 使用用户管理的hooks
+const formRef = ref();
+const tableRef = ref();
+
 const {
-  // 响应式数据
-  searchForm,
+  form,
   loading,
-  tableData,
-  pagination,
-  selectedUsers,
-  searchValue,
-  switchLoadMap,
-  dialogVisible,
-  dialogTitle,
-  isEdit,
-  submitLoading,
-  formRef,
-  formData,
-  passwordDialogVisible,
-  passwordSubmitLoading,
-  passwordFormRef,
-  passwordForm,
-  currentPasswordUser,
-  departmentOptions,
-  loadingDepartments,
-  assignRoleDialogVisible,
-  currentAssignUser,
-
-  // 验证规则
-  formRules,
-  passwordRules,
-
-  // 计算属性
+  columns,
+  dataList,
+  selectedRows,
   hasSelection,
-  isEditing,
-
-  // 方法
-  fetchData,
-  handleSearch,
-  handleResetSearch,
-  handlePageChange,
-  handlePageSizeChange,
   handleSelectionChange,
-  openCreateDialog,
-  openEditDialog,
-  closeDialog,
-  handleStatusChange,
-  handleResetPassword,
-  handlePasswordSubmit,
-  handleSubmit,
+  resetForm,
+  onSearch,
+  openDialog,
+  openPasswordDialog,
+  openAssignRoleDialog,
   handleDelete,
-  handleBatchDelete,
-  handleExport,
-  refresh,
-  handleAssignRoles,
-  handleAssignRolesSubmit,
-
-  formatDateTime
+  handleBatchDelete
 } = useUser();
+
+const onFullscreen = () => {
+  tableRef.value.setAdaptive();
+};
 </script>
 
 <style scoped>
-.main {
-  padding: 16px;
-}
-
-.table-card {
-  margin-bottom: 16px;
-}
-
-.text-muted {
-  font-style: italic;
-  color: #909399;
-}
-
-.mb-4 {
+.search-form {
   margin-bottom: 16px;
 }
 </style>
