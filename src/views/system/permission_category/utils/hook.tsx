@@ -137,10 +137,18 @@ export function usePermissionCategory() {
   };
 
   // 打开对话框
-  const openDialog = (title = "新增分类", row?: PermissionCategory) => {
+  const openDialog = (
+    title = "新增分类",
+    row?: PermissionCategory | { parentId: string }
+  ) => {
+    // 判断是否为编辑模式（row有id属性）还是新增模式
+    const isEdit = row && "id" in row;
+    // 判断是否为行记录新增模式（row有parentId属性）
+    const isRowAdd = row && "parentId" in row;
+
     // 确定需要排除的ID列表
     let excludeIds: string[] = [];
-    if (row) {
+    if (isEdit) {
       excludeIds = [row.id, ...getChildrenIds(row.id, dataList.value)];
     }
 
@@ -153,17 +161,44 @@ export function usePermissionCategory() {
       ...formatCategoryOptions(dataList.value, excludeIds)
     ];
 
+    // 设置表单初始数据
+    let formData;
+    if (isEdit) {
+      // 编辑模式：使用现有数据
+      formData = {
+        categoryOptions,
+        parent_id: row.parent_id ?? null,
+        category_key: row.category_key ?? "",
+        display_name: row.display_name ?? "",
+        description: row.description ?? "",
+        sort_order: row.sort_order ?? 0
+      };
+    } else if (isRowAdd) {
+      // 行记录新增模式：设置父级分类
+      formData = {
+        categoryOptions,
+        parent_id: row.parentId,
+        category_key: "",
+        display_name: "",
+        description: "",
+        sort_order: 0
+      };
+    } else {
+      // 普通新增模式：空表单
+      formData = {
+        categoryOptions,
+        parent_id: null,
+        category_key: "",
+        display_name: "",
+        description: "",
+        sort_order: 0
+      };
+    }
+
     addDialog({
       title,
       props: {
-        formInline: {
-          categoryOptions,
-          parent_id: row?.parent_id ?? null,
-          category_key: row?.category_key ?? "",
-          display_name: row?.display_name ?? "",
-          description: row?.description ?? "",
-          sort_order: row?.sort_order ?? 0
-        }
+        formInline: formData
       },
       width: "600px",
       draggable: true,
@@ -194,7 +229,7 @@ export function usePermissionCategory() {
               };
 
               let response;
-              if (row) {
+              if (isEdit) {
                 response = await updatePermissionCategory(row.id, requestData);
               } else {
                 response = await createPermissionCategory(requestData);
@@ -202,19 +237,19 @@ export function usePermissionCategory() {
 
               if (response.success) {
                 ElMessage.success(
-                  row ? "权限分类更新成功" : "权限分类创建成功"
+                  isEdit ? "权限分类更新成功" : "权限分类创建成功"
                 );
                 done(); // 使用done()函数关闭对话框
                 onSearch(); // 刷新数据
               } else {
                 ElMessage.error(
                   response.message ||
-                    (row ? "权限分类更新失败" : "权限分类创建失败")
+                    (isEdit ? "权限分类更新失败" : "权限分类创建失败")
                 );
               }
             } catch (error) {
               console.error("提交权限分类数据失败:", error);
-              ElMessage.error(row ? "权限分类更新失败" : "权限分类创建失败");
+              ElMessage.error(isEdit ? "权限分类更新失败" : "权限分类创建失败");
             }
           }
         });

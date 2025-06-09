@@ -28,6 +28,7 @@ export interface PermissionCategoryNode {
     id: string;
     permission_key: string;
     display_name: string;
+    description: string;
   }[];
   children_categories: PermissionCategoryNode[];
 }
@@ -37,6 +38,7 @@ export interface PermissionTreeItem {
   id: string;
   permission_key?: string;
   display_name: string;
+  description?: string;
   children?: PermissionTreeItem[];
   type: "category" | "permission";
 }

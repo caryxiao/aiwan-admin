@@ -30,7 +30,7 @@ export function useUser() {
   // 搜索表单状态
   const form = reactive({
     status: "",
-    search: ""
+    q: ""
   });
 
   // 表单引用已移至各自的对话框函数中
@@ -154,7 +154,7 @@ export function useUser() {
   // 重置搜索表单
   const resetForm = () => {
     form.status = "";
-    form.search = "";
+    form.q = "";
     onSearch();
   };
 
@@ -167,8 +167,8 @@ export function useUser() {
       if (form.status !== "") {
         params.is_active = form.status;
       }
-      if (form.search) {
-        params.search = form.search;
+      if (form.q) {
+        params.q = form.q;
       }
 
       const { data } = await getAdminUsers(params);

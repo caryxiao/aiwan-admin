@@ -43,7 +43,8 @@ export interface UpdateAdminUserRequest {
 export const getAdminUsers = (params?: {
   page?: number;
   page_size?: number;
-  search?: string;
+  q?: string;
+  is_active: boolean;
 }) => {
   return http.request<ApiResponse<PaginatedResponse<AdminUser>>>(
     "get",

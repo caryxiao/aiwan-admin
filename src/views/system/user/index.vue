@@ -19,7 +19,7 @@
       </el-form-item>
       <el-form-item label="搜索：" prop="search">
         <el-input
-          v-model="form.search"
+          v-model="form.q"
           placeholder="请输入用户名或邮箱"
           clearable
           class="w-[240px]!"

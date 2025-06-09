@@ -377,20 +377,32 @@ export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
   async function loadPermissionData(formData: PermissionConfigFormProps) {
     try {
       formData.loadingPermissions = true;
+      console.log("开始加载权限数据...");
 
       // 获取权限树数据
       const permissionTreeResponse = await getPermissionTree();
+      console.log("权限树API响应:", permissionTreeResponse);
+
+      if (!permissionTreeResponse.data || !permissionTreeResponse.data.tree) {
+        throw new Error("权限树数据格式错误：缺少tree字段");
+      }
+
       const categoryNodes = permissionTreeResponse.data.tree;
+      console.log("权限分类节点数据:", categoryNodes);
 
       // 转换为前端树组件需要的格式
       formData.permissionTreeData = convertCategoryNodesToTree(categoryNodes);
+      console.log("转换后的权限树数据:", formData.permissionTreeData);
 
       // 获取角色当前权限键
       const rolePermissionKeysResponse = await getRolePermissionKeys(
         formData.role.id
       );
+      console.log("角色权限键API响应:", rolePermissionKeysResponse);
+
       const permissionKeys = rolePermissionKeysResponse.data;
       formData.checkedPermissionKeys = permissionKeys;
+      console.log("角色当前权限键:", permissionKeys);
 
       // 等待下一个tick后设置选中状态
       await nextTick();
@@ -399,18 +411,28 @@ export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
       // 如果权限包含*号，表示全选所有权限
       if (permissionKeys.includes("*")) {
         checkedNodeIds = getAllPermissionNodeIds(formData.permissionTreeData);
+        console.log("超级管理员权限，全选节点ID:", checkedNodeIds);
       } else {
         checkedNodeIds = getNodeIdsByPermissionKeys(
           formData.permissionTreeData,
           permissionKeys
         );
+        console.log("根据权限键获取的节点ID:", checkedNodeIds);
       }
 
       // 通过formData传递选中的节点ID
       formData.checkedNodeIds = checkedNodeIds;
+      console.log("权限数据加载完成");
     } catch (error) {
       console.error("获取权限数据失败:", error);
-      message("获取权限数据失败", { type: "error" });
+      console.error("错误详情:", {
+        message: error.message,
+        stack: error.stack,
+        response: error.response
+      });
+      message(`获取权限数据失败: ${error.message || "未知错误"}`, {
+        type: "error"
+      });
     } finally {
       formData.loadingPermissions = false;
     }
@@ -437,6 +459,7 @@ export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
           id: permission.id,
           permission_key: permission.permission_key,
           display_name: permission.display_name,
+          description: permission.description,
           type: "permission" as const,
           children: undefined
         }));
@@ -447,6 +470,11 @@ export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
       if (node.children_categories && node.children_categories.length > 0) {
         const childCategories = node.children_categories.map(processNode);
         treeItem.children!.push(...childCategories);
+      }
+
+      // 如果没有子节点，将children设为undefined
+      if (treeItem.children!.length === 0) {
+        treeItem.children = undefined;
       }
 
       return treeItem;

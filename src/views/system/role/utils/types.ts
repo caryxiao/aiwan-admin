@@ -34,6 +34,8 @@ export interface PermissionTreeItem {
   id: string;
   /** 显示名称 */
   display_name: string;
+  /** 描述信息 */
+  description?: string;
   /** 权限键（仅权限节点有） */
   permission_key?: string;
   /** 节点类型 */
