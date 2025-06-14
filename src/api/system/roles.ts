@@ -119,3 +119,61 @@ export const getRolePermissionKeys = (roleId: string) => {
     `/api/v1/roles/${roleId}/permissions`
   );
 };
+
+// 权限组相关类型定义（角色模块专用）
+export interface RolePermissionGroup {
+  id: string;
+  group_key: string;
+  display_name: string;
+  description?: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RolePermissionGroupOption {
+  id: string;
+  group_key: string;
+  display_name: string;
+  description?: string;
+}
+
+export interface AssignPermissionGroupsToRolePayload {
+  permission_group_ids: string[];
+}
+
+// 权限组相关API
+// 获取权限组选项
+export const getPermissionGroupOptions = () => {
+  return http.request<ApiResponse<RolePermissionGroupOption[]>>(
+    "get",
+    "/api/v1/permission-groups/options"
+  );
+};
+
+// 角色权限组响应类型（匹配实际API响应）
+export interface RolePermissionGroupsResponse {
+  role_id: string;
+  role_name: string;
+  permission_groups: RolePermissionGroup[];
+}
+
+// 获取角色的权限组
+export const getRolePermissionGroups = (roleId: string) => {
+  return http.request<ApiResponse<RolePermissionGroupsResponse>>(
+    "get",
+    `/api/v1/roles/${roleId}/permission-groups`
+  );
+};
+
+// 设置角色的权限组
+export const setRolePermissionGroups = (
+  roleId: string,
+  data: AssignPermissionGroupsToRolePayload
+) => {
+  return http.request<ApiResponse<null>>(
+    "post",
+    `/api/v1/roles/${roleId}/permission-groups`,
+    { data }
+  );
+};

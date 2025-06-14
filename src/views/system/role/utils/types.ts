@@ -1,4 +1,4 @@
-import type { AdminRole } from "@/api/system/roles";
+import type { AdminRole, RolePermissionGroupOption } from "@/api/system/roles";
 
 /** 角色表单属性 */
 export interface RoleFormProps {
@@ -14,18 +14,16 @@ export interface RoleFormProps {
   formRef?: any;
 }
 
-/** 权限配置表单属性 */
-export interface PermissionConfigFormProps {
+/** 权限组配置表单属性 */
+export interface PermissionGroupConfigFormProps {
   /** 角色信息 */
   role: AdminRole;
-  /** 权限树数据 */
-  permissionTreeData: PermissionTreeItem[];
-  /** 已选中的权限键 */
-  checkedPermissionKeys: string[];
-  /** 已选中的节点ID */
-  checkedNodeIds?: string[];
-  /** 权限加载状态 */
-  loadingPermissions: boolean;
+  /** 权限组选项数据 */
+  permissionGroupOptions: RolePermissionGroupOption[];
+  /** 已选中的权限组ID */
+  checkedPermissionGroupIds: string[];
+  /** 权限组加载状态 */
+  loadingPermissionGroups: boolean;
 }
 
 /** 权限树节点 */

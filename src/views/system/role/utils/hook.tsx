@@ -24,25 +24,18 @@ import {
   createAdminRole,
   updateAdminRole,
   deleteAdminRole,
-  assignPermissionKeysToRole,
-  getRolePermissionKeys,
+  getPermissionGroupOptions,
+  getRolePermissionGroups,
+  setRolePermissionGroups,
   type AdminRole,
   type CreateAdminRoleRequest,
   type UpdateAdminRoleRequest
 } from "@/api/system/roles";
-import {
-  getHierarchicalPermissionTree,
-  type HierarchicalPermissionNode
-} from "@/api/system/permissions";
 
 // 类型导入
-import type {
-  RoleFormProps,
-  PermissionConfigFormProps,
-  PermissionTreeItem
-} from "./types";
+import type { RoleFormProps, PermissionGroupConfigFormProps } from "./types";
 import RoleForm from "../form/index.vue";
-import PermissionConfigForm from "../form/permission-config.vue";
+import PermissionGroupConfigForm from "../form/permission-group-config.vue";
 
 export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
   // 搜索表单状态
@@ -67,16 +60,6 @@ export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
     background: true,
     pageSizes: [10, 20, 50, 100]
   });
-
-  // 权限配置表单数据
-  const _permissionFormData = reactive<PermissionConfigFormProps>({
-    role: {} as AdminRole,
-    permissionTreeData: [],
-    checkedPermissionKeys: [],
-    loadingPermissions: false
-  });
-
-  // 权限配置相关引用（已移除，现在通过组件ref获取）
 
   // 按钮样式
   const buttonClass = deviceDetection() ? "w-full" : "";
@@ -161,7 +144,7 @@ export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
             icon={useRenderIcon(Key)}
             onClick={() => openPermissionDialog(row)}
           >
-            权限配置
+            权限组配置
           </ElButton>
           <ElPopconfirm
             title={`是否确认删除角色${row.display_name}？`}
@@ -293,201 +276,158 @@ export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
     });
   }
 
-  // 权限配置对话框
+  // 权限组配置对话框
   function openPermissionDialog(row: AdminRole) {
-    const formData = reactive<PermissionConfigFormProps>({
+    const formData = reactive<PermissionGroupConfigFormProps>({
       role: row,
-      permissionTreeData: [],
-      checkedPermissionKeys: [],
-      loadingPermissions: true
+      permissionGroupOptions: [],
+      checkedPermissionGroupIds: [],
+      loadingPermissionGroups: true
     });
 
     let permissionFormRef: any = null;
 
     addDialog({
-      title: `配置权限 - ${row.display_name}`,
+      title: `配置权限组 - ${row.display_name}`,
       props: {
         formData
       },
-      width: "800px",
+      width: "1000px",
       draggable: true,
       fullscreen: deviceDetection(),
       fullscreenIcon: true,
       closeOnClickModal: false,
       contentRenderer: () => {
-        return h(PermissionConfigForm, {
+        return h(PermissionGroupConfigForm, {
           formData,
           ref: (el: any) => {
             permissionFormRef = el;
+          },
+          "onUpdate:checkedPermissionGroupIds": (value: string[]) => {
+            formData.checkedPermissionGroupIds = value;
           }
         });
       },
       beforeSure: (done, { options }) => {
-        const curData = options.props.formData as PermissionConfigFormProps;
-
-        // 如果是超级管理员（*权限），不允许修改
-        if (curData.checkedPermissionKeys.includes("*")) {
-          message("超级管理员权限不允许修改", { type: "warning" });
-          done();
-          return;
-        }
+        const curData = options.props
+          .formData as PermissionGroupConfigFormProps;
 
         if (!permissionFormRef) {
-          message("权限配置组件未找到", { type: "error" });
-          return;
-        }
-
-        const treeRef = permissionFormRef.getRef();
-        if (!treeRef) {
-          message("权限树组件未初始化", { type: "error" });
+          message("权限组配置组件未找到", { type: "error" });
           return;
         }
 
         try {
-          // 获取选中的节点ID（只获取权限节点，过滤掉分类节点）
-          const checkedNodeIds = treeRef.getCheckedKeys() as string[];
-          const permissionNodeIds = checkedNodeIds.filter(id => {
-            return (
-              typeof id === "string" && !id.toString().startsWith("category_")
-            );
-          });
+          // 获取选中的权限组ID
+          const selectedPermissionGroupIds =
+            permissionFormRef.getCheckedPermissionGroupIds();
 
-          // 获取选中节点的permission_key（不再自动转换为*）
-          const selectedPermissionKeys = getCheckedPermissionKeysWithoutStar(
-            curData.permissionTreeData,
-            permissionNodeIds
-          );
+          // 显示保存确认
+          const selectedCount = selectedPermissionGroupIds.length;
 
-          // 保存权限配置
-          assignPermissionKeysToRole(curData.role.id, {
-            permission_keys: selectedPermissionKeys
-          })
+          ElMessageBox.confirm(
+            `确认为角色 "${curData.role.display_name}" 分配 ${selectedCount} 个权限组吗？`,
+            "权限组配置确认",
+            {
+              type: "warning",
+              confirmButtonText: "确认保存",
+              cancelButtonText: "取消",
+              showCancelButton: true
+            }
+          )
             .then(() => {
-              message("权限配置保存成功", { type: "success" });
-              done();
+              // 保存权限组配置
+              setRolePermissionGroups(curData.role.id, {
+                permission_group_ids: selectedPermissionGroupIds
+              })
+                .then(() => {
+                  message(
+                    `权限组配置保存成功！已为角色分配 ${selectedCount} 个权限组`,
+                    { type: "success" }
+                  );
+                  done();
+                })
+                .catch(error => {
+                  console.error("保存权限组配置失败:", error);
+                  message("保存权限组配置失败，请稍后重试", { type: "error" });
+                });
             })
-            .catch(error => {
-              console.error("保存权限配置失败:", error);
-              message("保存权限配置失败", { type: "error" });
+            .catch(() => {
+              // 用户取消保存
+              console.log("用户取消保存权限组配置");
             });
         } catch (error) {
-          console.error("保存权限配置失败:", error);
-          message("保存权限配置失败", { type: "error" });
+          console.error("保存权限组配置失败:", error);
+          message("保存权限组配置失败，请稍后重试", { type: "error" });
         }
       }
     });
 
-    // 异步加载权限数据
-    loadPermissionData(formData);
+    // 异步加载权限组数据
+    loadPermissionGroupData(formData);
   }
 
-  // 加载权限数据
-  async function loadPermissionData(formData: PermissionConfigFormProps) {
-    formData.loadingPermissions = true;
+  // 加载权限组数据
+  async function loadPermissionGroupData(
+    formData: PermissionGroupConfigFormProps
+  ) {
+    formData.loadingPermissionGroups = true;
     try {
-      const [{ data: permissionTreeData }, { data: checkedPermissionKeys }] =
+      const [{ data: permissionGroupOptions }, { data: rolePermissionGroups }] =
         await Promise.all([
-          getHierarchicalPermissionTree(),
-          getRolePermissionKeys(formData.role.id)
+          getPermissionGroupOptions(),
+          getRolePermissionGroups(formData.role.id)
         ]);
 
-      const permissionTree = convertToPermissionTree(permissionTreeData);
+      // 验证并设置权限组选项
+      formData.permissionGroupOptions = Array.isArray(permissionGroupOptions)
+        ? permissionGroupOptions
+        : [];
 
-      formData.permissionTreeData = permissionTree;
-      formData.checkedPermissionKeys = getNodeIdsByPermissionKeys(
-        permissionTree,
-        checkedPermissionKeys
-      );
-    } catch (error) {
-      console.error("加载权限数据失败:", error);
-      message("加载权限数据失败", { type: "error" });
-    } finally {
-      formData.loadingPermissions = false;
-    }
-  }
+      // 验证并提取权限组ID数组
+      let checkedIds: string[] = [];
+      console.log("原始角色权限组数据:", rolePermissionGroups);
 
-  function convertToPermissionTree(
-    nodes: HierarchicalPermissionNode[]
-  ): PermissionTreeItem[] {
-    return nodes.map(node => {
-      const treeItem: PermissionTreeItem = {
-        id: node.id,
-        display_name: node.display_name,
-        description: node.description,
-        permission_key: node.key,
-        type: node.node_type === "category" ? "category" : "permission",
-        children: []
-      };
-
-      if (node.children && node.children.length > 0) {
-        treeItem.children = node.children.map(child => ({
-          id: child.id,
-          display_name: child.display_name,
-          description: child.description,
-          permission_key: child.permission_key,
-          type: "permission" as const,
-          children: []
-        }));
-      }
-
-      return treeItem;
-    });
-  }
-
-  function getNodeIdsByPermissionKeys(
-    tree: PermissionTreeItem[],
-    permissionKeys: string[]
-  ): string[] {
-    const result: string[] = [];
-
-    const traverse = (nodes: PermissionTreeItem[]) => {
-      if (!nodes) return;
-
-      for (const node of nodes) {
+      if (Array.isArray(rolePermissionGroups)) {
+        // 直接是数组
+        checkedIds = rolePermissionGroups.map(group => group.id);
+      } else if (
+        rolePermissionGroups &&
+        typeof rolePermissionGroups === "object"
+      ) {
+        // 如果返回的是单个对象或其他结构，尝试提取
+        const groupsData = rolePermissionGroups as any;
         if (
-          node.type === "permission" &&
-          node.permission_key &&
-          permissionKeys.includes(node.permission_key)
+          "permission_groups" in groupsData &&
+          Array.isArray(groupsData.permission_groups)
         ) {
-          result.push(node.id);
-        }
-
-        if (node.children && node.children.length > 0) {
-          traverse(node.children);
+          // API返回格式: { permission_groups: [...] }
+          checkedIds = groupsData.permission_groups.map(
+            (group: any) => group.id
+          );
+        } else if ("items" in groupsData && Array.isArray(groupsData.items)) {
+          // 分页格式: { items: [...] }
+          checkedIds = groupsData.items.map((group: any) => group.id);
+        } else if ("data" in groupsData && Array.isArray(groupsData.data)) {
+          // 通用格式: { data: [...] }
+          checkedIds = groupsData.data.map((group: any) => group.id);
         }
       }
-    };
 
-    traverse(tree);
-    return result;
-  }
+      formData.checkedPermissionGroupIds = checkedIds;
 
-  // 获取所有选中节点的permission_key（不自动转换为*）
-  function getCheckedPermissionKeysWithoutStar(
-    tree: PermissionTreeItem[],
-    checkedNodeIds: string[]
-  ): string[] {
-    const checkedKeys = new Set<string>();
-    const nodeMap = new Map<string, PermissionTreeItem>();
-
-    const traverse = (nodes: PermissionTreeItem[]) => {
-      nodes.forEach(node => {
-        nodeMap.set(node.id, node);
-        if (node.children) {
-          traverse(node.children);
-        }
-      });
-    };
-    traverse(tree);
-
-    checkedNodeIds.forEach(id => {
-      const node = nodeMap.get(id);
-      if (node && node.type === "permission" && node.permission_key) {
-        checkedKeys.add(node.permission_key);
-      }
-    });
-
-    return Array.from(checkedKeys);
+      console.log("权限组选项:", formData.permissionGroupOptions);
+      console.log("已选中的权限组ID:", formData.checkedPermissionGroupIds);
+      console.log("解析后的选中权限组数量:", checkedIds.length);
+    } catch (error) {
+      console.error("加载权限组数据失败:", error);
+      message("加载权限组数据失败，请稍后重试", { type: "error" });
+      // 确保即使出错也有默认值
+      formData.permissionGroupOptions = [];
+      formData.checkedPermissionGroupIds = [];
+    } finally {
+      formData.loadingPermissionGroups = false;
+    }
   }
 
   // 删除操作

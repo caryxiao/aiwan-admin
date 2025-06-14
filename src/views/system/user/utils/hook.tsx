@@ -2,6 +2,7 @@ import { reactive, ref, onMounted, h, computed } from "vue";
 import { ElMessage, ElMessageBox, ElSwitch } from "element-plus";
 import { formatDateTime } from "@/utils/dateTime";
 import { addDialog } from "@/components/ReDialog";
+import type { PaginationProps } from "@pureadmin/table";
 
 import {
   getAdminUsers,
