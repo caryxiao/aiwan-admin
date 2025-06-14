@@ -1,82 +1,64 @@
 <template>
   <div class="main">
-    <!-- 搜索表单区域 -->
     <el-form
       ref="formRef"
       :inline="true"
       :model="form"
-      class="search-form bg-bg_color w-full pl-8 pt-[12px] overflow-auto"
+      class="search-form bg-bg_color w-[99/100] pl-8 pt-[12px]"
     >
-      <!-- 搜索字段 -->
-      <el-form-item label="角色名称：" prop="q">
+      <el-form-item label="搜索" prop="q">
         <el-input
           v-model="form.q"
-          placeholder="请输入角色名称或显示名称"
+          placeholder="搜索键名、名称或描述"
           clearable
           class="!w-[200px]"
-          @keyup.enter="onSearch"
         />
       </el-form-item>
-
-      <!-- 操作按钮 -->
       <el-form-item>
         <el-button
           type="primary"
-          :icon="useRenderIcon('ri:search-line')"
+          :icon="useRenderIcon(Search)"
           :loading="loading"
           @click="onSearch"
         >
           搜索
         </el-button>
-        <el-button :icon="useRenderIcon(Refresh)" @click="resetForm">
+        <el-button :icon="useRenderIcon(Refresh)" @click="resetForm(formRef)">
           重置
         </el-button>
       </el-form-item>
     </el-form>
 
-    <!-- 表格工具栏 -->
-    <PureTableBar title="角色列表" :columns="columns" @refresh="onSearch">
+    <PureTableBar title="权限组列表" :columns="columns" @refresh="onSearch">
       <template #buttons>
         <el-button
           type="primary"
           :icon="useRenderIcon(AddFill)"
-          @click="openDialog()"
+          @click="openDialog('新增')"
         >
-          新增角色
-        </el-button>
-        <el-button
-          type="danger"
-          :icon="useRenderIcon(Delete)"
-          :disabled="selectedRows.length === 0"
-          @click="handleBatchDelete"
-        >
-          批量删除
+          新增权限组
         </el-button>
       </template>
-
       <template v-slot="{ size, dynamicColumns }">
         <pure-table
-          ref="tableRef"
-          adaptive
-          :adaptiveConfig="{ offsetBottom: 108 }"
+          border
           align-whole="center"
+          showOverflowTooltip
           table-layout="auto"
           :loading="loading"
           :size="size"
+          adaptive
           :data="dataList"
           :columns="dynamicColumns"
           :pagination="pagination"
-          :paginationSmall="size === 'small'"
+          :paginationSmall="size === 'small' ? true : false"
           :header-cell-style="{
-            background: 'var(--el-fill-color-lighter)',
+            background: 'var(--el-table-row-hover-bg-color)',
             color: 'var(--el-text-color-primary)'
           }"
-          row-key="id"
-          @selection-change="handleSelectionChange"
           @page-size-change="handleSizeChange"
           @page-current-change="handleCurrentChange"
         >
-          <!-- 操作列插槽 -->
           <template #operation="{ row }">
             <el-button
               class="reset-margin"
@@ -84,22 +66,22 @@
               type="primary"
               :size="size"
               :icon="useRenderIcon(EditPen)"
-              @click="openDialog('编辑角色', row)"
+              @click="openDialog('编辑', row)"
             >
-              修改
+              编辑
             </el-button>
             <el-button
               class="reset-margin"
               link
-              type="success"
+              type="primary"
               :size="size"
-              :icon="useRenderIcon(Key)"
-              @click="openPermissionDialog(row)"
+              :icon="useRenderIcon(Setting)"
+              @click="openAssignDialog(row)"
             >
-              权限配置
+              分配权限
             </el-button>
             <el-popconfirm
-              :title="`是否确认删除角色${row.display_name}？`"
+              :title="`是否确认删除权限组 ${row.display_name}`"
               @confirm="handleDelete(row)"
             >
               <template #reference>
@@ -123,61 +105,33 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { usePermissionGroup } from "./utils/hook";
 import { PureTableBar } from "@/components/RePureTableBar";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
-import { useRoleManagement } from "./utils/hook";
-
-// 图标
-import Search from "~icons/ep/search";
-import Refresh from "~icons/ep/refresh";
-import AddFill from "~icons/ri/add-circle-line";
 import Delete from "~icons/ep/delete";
 import EditPen from "~icons/ep/edit-pen";
-import Key from "~icons/ep/key";
+import Setting from "~icons/ep/setting";
+import Refresh from "~icons/ep/refresh";
+import Search from "~icons/ep/search";
+import AddFill from "~icons/ri/add-circle-line";
+
+defineOptions({
+  name: "PermissionGroup"
+});
 
 const formRef = ref();
-const tableRef = ref();
-
 const {
   form,
-  dataList,
   loading,
-  selectedRows,
-  pagination,
   columns,
-  buttonClass,
+  dataList,
+  pagination,
   onSearch,
   resetForm,
-  openDialog,
-  openPermissionDialog,
-  handleDelete,
-  handleBatchDelete,
-  handleSelectionChange,
   handleSizeChange,
-  handleCurrentChange
-} = useRoleManagement(tableRef);
-
-const size = ref("default");
+  handleCurrentChange,
+  handleDelete,
+  openDialog,
+  openAssignDialog
+} = usePermissionGroup();
 </script>
-
-<style scoped>
-.main {
-  min-height: 100vh;
-  padding: 20px;
-  background-color: #f5f5f5;
-}
-
-.search-card {
-  margin-bottom: 20px;
-}
-
-.table-card {
-  margin-bottom: 20px;
-}
-
-.dialog-footer {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-}
-</style>

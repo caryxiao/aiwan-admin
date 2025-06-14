@@ -75,7 +75,7 @@ export function useUser() {
     {
       label: "邮箱",
       prop: "email",
-      width: 200,
+      minWidth: 200,
       align: "left",
       showOverflowTooltip: true
     },
@@ -89,7 +89,7 @@ export function useUser() {
     {
       label: "部门",
       prop: "department_name",
-      width: 150,
+      minWidth: 150,
       align: "left",
       showOverflowTooltip: true
     },
@@ -151,10 +151,20 @@ export function useUser() {
   // 选中的行数据
   const selectedRows = ref<AdminUser[]>([]);
 
+  // 分页配置
+  const pagination = reactive<PaginationProps>({
+    total: 0,
+    pageSize: 10,
+    currentPage: 1,
+    background: true,
+    pageSizes: [10, 20, 50, 100]
+  });
+
   // 重置搜索表单
   const resetForm = () => {
     form.status = "";
     form.q = "";
+    pagination.currentPage = 1;
     onSearch();
   };
 
@@ -162,7 +172,10 @@ export function useUser() {
   const onSearch = async () => {
     try {
       loading.value = true;
-      const params: any = {};
+      const params: any = {
+        page: pagination.currentPage,
+        page_size: pagination.pageSize
+      };
 
       if (form.status !== "") {
         params.is_active = form.status;
@@ -173,6 +186,7 @@ export function useUser() {
 
       const { data } = await getAdminUsers(params);
       dataList.value = data.items || [];
+      pagination.total = data.total || 0;
     } catch (error) {
       console.error("获取用户列表失败:", error);
       ElMessage.error("获取用户列表失败");
@@ -523,6 +537,18 @@ export function useUser() {
     });
   };
 
+  // 分页大小改变
+  const handleSizeChange = (val: number) => {
+    pagination.pageSize = val;
+    onSearch();
+  };
+
+  // 当前页改变
+  const handleCurrentChange = (val: number) => {
+    pagination.currentPage = val;
+    onSearch();
+  };
+
   // 初始化
   onMounted(() => {
     onSearch();
@@ -545,6 +571,9 @@ export function useUser() {
     openPasswordDialog,
     openAssignRoleDialog,
     handleDelete,
-    handleBatchDelete
+    handleBatchDelete,
+    pagination,
+    handleSizeChange,
+    handleCurrentChange
   };
 }

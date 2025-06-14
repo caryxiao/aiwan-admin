@@ -1,16 +1,24 @@
-import { ref, reactive, onMounted, h, nextTick, type Ref } from "vue";
+import { reactive, ref, onMounted, h, type Ref } from "vue";
+import { message } from "@/utils/message";
 import type { PaginationProps } from "@pureadmin/table";
-import type { TableInstance } from "element-plus";
-import { ElButton, ElPopconfirm, ElMessageBox } from "element-plus";
+import {
+  ElMessageBox,
+  ElButton,
+  ElPopconfirm,
+  ElTag,
+  type TableInstance
+} from "element-plus";
 import { formatDateTime } from "@/utils/dateTime";
 import { addDialog } from "@/components/ReDialog";
-import { message } from "@/utils/message";
-import { deviceDetection } from "@pureadmin/utils";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
-import EditPen from "~icons/ep/edit-pen";
+import { deviceDetection } from "@pureadmin/utils";
+
+// 图标
 import Delete from "~icons/ep/delete";
+import EditPen from "~icons/ep/edit-pen";
 import Key from "~icons/ep/key";
 
+// API 导入
 import {
   getAdminRoles,
   createAdminRole,
@@ -23,23 +31,23 @@ import {
   type UpdateAdminRoleRequest
 } from "@/api/system/roles";
 import {
-  getPermissionTree,
-  type PermissionCategoryNode
+  getHierarchicalPermissionTree,
+  type HierarchicalPermissionNode
 } from "@/api/system/permissions";
 
+// 类型导入
 import type {
   RoleFormProps,
   PermissionConfigFormProps,
-  PermissionTreeItem,
-  SearchForm
+  PermissionTreeItem
 } from "./types";
 import RoleForm from "../form/index.vue";
 import PermissionConfigForm from "../form/permission-config.vue";
 
 export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
   // 搜索表单状态
-  const form = reactive<SearchForm>({
-    search: ""
+  const form = reactive({
+    q: ""
   });
 
   // 数据列表
@@ -95,9 +103,9 @@ export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
       width: 150,
       align: "left",
       cellRenderer: ({ row }) => (
-        <el-tag type="primary" size="small">
+        <ElTag type="primary" size="small">
           {row.role_name}
-        </el-tag>
+        </ElTag>
       )
     },
     {
@@ -180,7 +188,7 @@ export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
 
   // 基础方法
   function resetForm() {
-    form.search = "";
+    form.q = "";
   }
 
   async function onSearch() {
@@ -189,7 +197,7 @@ export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
       const params = {
         page: pagination.currentPage,
         page_size: pagination.pageSize,
-        search: form.search || undefined
+        q: form.q || undefined
       };
       const { data } = await getAdminRoles(params);
       dataList.value = data.items;
@@ -375,115 +383,57 @@ export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
 
   // 加载权限数据
   async function loadPermissionData(formData: PermissionConfigFormProps) {
+    formData.loadingPermissions = true;
     try {
-      formData.loadingPermissions = true;
-      console.log("开始加载权限数据...");
+      const [{ data: permissionTreeData }, { data: checkedPermissionKeys }] =
+        await Promise.all([
+          getHierarchicalPermissionTree(),
+          getRolePermissionKeys(formData.role.id)
+        ]);
 
-      // 获取权限树数据
-      const permissionTreeResponse = await getPermissionTree();
-      console.log("权限树API响应:", permissionTreeResponse);
+      const permissionTree = convertToPermissionTree(permissionTreeData);
 
-      if (!permissionTreeResponse.data || !permissionTreeResponse.data.tree) {
-        throw new Error("权限树数据格式错误：缺少tree字段");
-      }
-
-      const categoryNodes = permissionTreeResponse.data.tree;
-      console.log("权限分类节点数据:", categoryNodes);
-
-      // 转换为前端树组件需要的格式
-      formData.permissionTreeData = convertCategoryNodesToTree(categoryNodes);
-      console.log("转换后的权限树数据:", formData.permissionTreeData);
-
-      // 获取角色当前权限键
-      const rolePermissionKeysResponse = await getRolePermissionKeys(
-        formData.role.id
+      formData.permissionTreeData = permissionTree;
+      formData.checkedPermissionKeys = getNodeIdsByPermissionKeys(
+        permissionTree,
+        checkedPermissionKeys
       );
-      console.log("角色权限键API响应:", rolePermissionKeysResponse);
-
-      const permissionKeys = rolePermissionKeysResponse.data;
-      formData.checkedPermissionKeys = permissionKeys;
-      console.log("角色当前权限键:", permissionKeys);
-
-      // 等待下一个tick后设置选中状态
-      await nextTick();
-      let checkedNodeIds: string[];
-
-      // 如果权限包含*号，表示全选所有权限
-      if (permissionKeys.includes("*")) {
-        checkedNodeIds = getAllPermissionNodeIds(formData.permissionTreeData);
-        console.log("超级管理员权限，全选节点ID:", checkedNodeIds);
-      } else {
-        checkedNodeIds = getNodeIdsByPermissionKeys(
-          formData.permissionTreeData,
-          permissionKeys
-        );
-        console.log("根据权限键获取的节点ID:", checkedNodeIds);
-      }
-
-      // 通过formData传递选中的节点ID
-      formData.checkedNodeIds = checkedNodeIds;
-      console.log("权限数据加载完成");
     } catch (error) {
-      console.error("获取权限数据失败:", error);
-      console.error("错误详情:", {
-        message: error.message,
-        stack: error.stack,
-        response: error.response
-      });
-      message(`获取权限数据失败: ${error.message || "未知错误"}`, {
-        type: "error"
-      });
+      console.error("加载权限数据失败:", error);
+      message("加载权限数据失败", { type: "error" });
     } finally {
       formData.loadingPermissions = false;
     }
   }
 
-  // 转换权限分类节点为树形结构
-  function convertCategoryNodesToTree(
-    nodes: PermissionCategoryNode[]
+  function convertToPermissionTree(
+    nodes: HierarchicalPermissionNode[]
   ): PermissionTreeItem[] {
-    const processNode = (node: PermissionCategoryNode): PermissionTreeItem => {
-      // 创建分类节点
+    return nodes.map(node => {
       const treeItem: PermissionTreeItem = {
-        id: `category_${node.category_id}`,
-        display_name:
-          node.category_name ||
-          `分类-${node.category_id?.slice(0, 8) || "unknown"}`,
-        type: "category",
+        id: node.id,
+        display_name: node.display_name,
+        description: node.description,
+        permission_key: node.key,
+        type: node.node_type === "category" ? "category" : "permission",
         children: []
       };
 
-      // 添加权限项作为子节点
-      if (node.permissions && node.permissions.length > 0) {
-        const permissionNodes = node.permissions.map(permission => ({
-          id: permission.id,
-          permission_key: permission.permission_key,
-          display_name: permission.display_name,
-          description: permission.description,
+      if (node.children && node.children.length > 0) {
+        treeItem.children = node.children.map(child => ({
+          id: child.id,
+          display_name: child.display_name,
+          description: child.description,
+          permission_key: child.permission_key,
           type: "permission" as const,
-          children: undefined
+          children: []
         }));
-        treeItem.children!.push(...permissionNodes);
-      }
-
-      // 递归处理子分类
-      if (node.children_categories && node.children_categories.length > 0) {
-        const childCategories = node.children_categories.map(processNode);
-        treeItem.children!.push(...childCategories);
-      }
-
-      // 如果没有子节点，将children设为undefined
-      if (treeItem.children!.length === 0) {
-        treeItem.children = undefined;
       }
 
       return treeItem;
-    };
-
-    return nodes.map(processNode);
+    });
   }
 
-  // 根据权限key获取节点ID
   function getNodeIdsByPermissionKeys(
     tree: PermissionTreeItem[],
     permissionKeys: string[]
@@ -512,59 +462,37 @@ export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
     return result;
   }
 
-  // 获取所有权限节点的ID（用于全选）
-  function getAllPermissionNodeIds(tree: PermissionTreeItem[]): string[] {
-    const result: string[] = [];
-
-    const traverse = (nodes: PermissionTreeItem[]) => {
-      if (!nodes) return;
-
-      for (const node of nodes) {
-        if (node.type === "permission") {
-          result.push(node.id);
-        }
-
-        if (node.children && node.children.length > 0) {
-          traverse(node.children);
-        }
-      }
-    };
-
-    traverse(tree);
-    return result;
-  }
-
   // 获取所有选中节点的permission_key（不自动转换为*）
   function getCheckedPermissionKeysWithoutStar(
     tree: PermissionTreeItem[],
     checkedNodeIds: string[]
   ): string[] {
-    const permissionKeys: string[] = [];
+    const checkedKeys = new Set<string>();
+    const nodeMap = new Map<string, PermissionTreeItem>();
 
     const traverse = (nodes: PermissionTreeItem[]) => {
-      if (!nodes) return;
-
-      for (const node of nodes) {
-        if (
-          node.type === "permission" &&
-          node.permission_key &&
-          checkedNodeIds.includes(node.id)
-        ) {
-          permissionKeys.push(node.permission_key);
-        }
-
-        if (node.children && node.children.length > 0) {
+      nodes.forEach(node => {
+        nodeMap.set(node.id, node);
+        if (node.children) {
           traverse(node.children);
         }
-      }
+      });
     };
-
     traverse(tree);
-    return permissionKeys;
+
+    checkedNodeIds.forEach(id => {
+      const node = nodeMap.get(id);
+      if (node && node.type === "permission" && node.permission_key) {
+        checkedKeys.add(node.permission_key);
+      }
+    });
+
+    return Array.from(checkedKeys);
   }
 
   // 删除操作
   function handleDelete(row: AdminRole) {
+    message(`您删除了角色: ${row.display_name}`, { type: "success" });
     ElMessageBox.confirm(
       `确认删除角色 "${row.display_name}" 吗？`,
       "删除确认",

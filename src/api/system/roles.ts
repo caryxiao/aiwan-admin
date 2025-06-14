@@ -37,7 +37,7 @@ export interface AssignPermissionKeysToRolePayload {
 export const getAdminRoles = (params?: {
   page?: number;
   page_size?: number;
-  search?: string;
+  q?: string;
 }) => {
   return http.request<ApiResponse<PaginatedResponse<AdminRole>>>(
     "get",

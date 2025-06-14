@@ -1,71 +1,12 @@
 import { http } from "@/utils/http";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
 
-// 权限分类相关类型（基于API文档）
-export interface PermissionCategory {
-  id: string;
-  category_key: string;
-  display_name: string;
-  description?: string | null;
-  sort_order?: number | null;
-  parent_id?: string | null;
-  children?: PermissionCategory[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface PermissionCategoryTreeResponse {
-  items: PermissionCategory[];
-  total: number;
-}
-
-// 权限树节点类型（基于最新API文档）
-export interface PermissionCategoryNode {
-  category_id: string;
-  category_name: string;
-  category_parent_id?: string | null;
-  permissions: {
-    id: string;
-    permission_key: string;
-    display_name: string;
-    description: string;
-  }[];
-  children_categories: PermissionCategoryNode[];
-}
-
-// 兼容性类型，用于前端树组件
-export interface PermissionTreeItem {
-  id: string;
-  permission_key?: string;
-  display_name: string;
-  description?: string;
-  children?: PermissionTreeItem[];
-  type: "category" | "permission";
-}
-
-export interface CreatePermissionCategoryRequest {
-  category_key: string;
-  display_name: string;
-  description?: string | null;
-  parent_id?: string | null;
-  sort_order?: number;
-}
-
-export interface UpdatePermissionCategoryRequest {
-  category_key?: string;
-  display_name?: string;
-  description?: string | null;
-  parent_id?: string | null;
-  sort_order?: number;
-}
-
 // 权限定义相关类型（基于API文档）
 export interface DefinedPermission {
   id: string;
   permission_key: string;
   display_name: string;
   description?: string;
-  category_id: string;
   created_at: string;
   updated_at: string;
 }
@@ -74,78 +15,81 @@ export interface CreateDefinedPermissionRequest {
   permission_key: string;
   display_name: string;
   description?: string | null;
-  category_id?: string | null;
 }
 
 export interface UpdateDefinedPermissionRequest {
   permission_key?: string;
   display_name?: string;
   description?: string | null;
-  category_id?: string | null;
 }
 
-// 权限分类管理API
-export const getPermissionCategories = (params?: {
-  page?: number;
-  page_size?: number;
-  search?: string;
-}) => {
-  return http.request<ApiResponse<PaginatedResponse<PermissionCategory>>>(
-    "get",
-    "/api/v1/permissions/categories",
-    { params }
-  );
-};
+// 权限组相关类型
+export interface PermissionGroup {
+  id: string;
+  group_key: string;
+  display_name: string;
+  description: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
 
-export const createPermissionCategory = (
-  data: CreatePermissionCategoryRequest
-) => {
-  return http.request<ApiResponse<PermissionCategory>>(
-    "post",
-    "/api/v1/permissions/categories",
-    { data }
-  );
-};
+export interface PermissionGroupDetail extends PermissionGroup {
+  permission_ids: string[];
+}
 
-export const updatePermissionCategory = (
-  id: string,
-  data: UpdatePermissionCategoryRequest
-) => {
-  return http.request<ApiResponse<PermissionCategory>>(
-    "put",
-    `/api/v1/permissions/categories/${id}`,
-    { data }
-  );
-};
+export interface CreatePermissionGroupRequest {
+  group_key: string;
+  display_name: string;
+  description?: string;
+  sort_order?: number;
+}
 
-export const deletePermissionCategory = (id: string) => {
-  return http.request<ApiResponse<null>>(
-    "delete",
-    `/api/v1/permissions/categories/${id}`
-  );
-};
+export interface UpdatePermissionGroupRequest {
+  group_key?: string;
+  display_name?: string;
+  description?: string;
+  sort_order?: number;
+}
 
-export const batchDeletePermissionCategories = (ids: string[]) => {
-  return http.request<ApiResponse<null>>(
-    "delete",
-    "/api/v1/permissions/categories/batch",
-    { data: { ids } }
-  );
-};
+// 分层权限节点（用于权限分配界面）
+export interface HierarchicalPermissionLeaf {
+  id: string;
+  permission_key: string;
+  display_name: string;
+  description: string | null;
+}
 
-export const getPermissionCategory = (id: string) => {
-  return http.request<ApiResponse<PermissionCategory>>(
-    "get",
-    `/api/v1/permissions/categories/${id}`
-  );
-};
+export interface HierarchicalPermissionNode {
+  id: string;
+  node_type: "category" | "permission";
+  key: string;
+  display_name: string;
+  description: string | null;
+  children: HierarchicalPermissionLeaf[];
+}
+
+// 只读权限树节点
+export interface PermissionNodeInfo {
+  id: string;
+  permission_key: string;
+  display_name: string;
+  description: string | null;
+}
+
+export interface ReadOnlyPermissionTreeNode {
+  category_id: string;
+  category_key: string;
+  category_name: string;
+  category_description: string | null;
+  permissions: PermissionNodeInfo[];
+}
 
 // 权限定义管理API
 export const getDefinedPermissions = (params?: {
   page?: number;
   page_size?: number;
-  search?: string;
-  category_id?: string;
+  q?: string;
 }) => {
   return http.request<ApiResponse<PaginatedResponse<DefinedPermission>>>(
     "get",
@@ -197,26 +141,87 @@ export const getDefinedPermission = (id: string) => {
   );
 };
 
-// 权限树响应类型（基于最新API文档）
-export interface PermissionTreeResponse {
-  tree: PermissionCategoryNode[];
-  total_categories: number;
-  total_permissions: number;
-}
-
-// 获取权限分类树形结构
-export const getPermissionCategoriesTree = (params?: { search?: string }) => {
-  return http.request<ApiResponse<PermissionCategoryTreeResponse>>(
+// 权限树 API
+/**
+ * 获取层级结构的权限树，用于权限分配
+ */
+export const getHierarchicalPermissionTree = () => {
+  return http.request<ApiResponse<HierarchicalPermissionNode[]>>(
     "get",
-    "/api/v1/permissions/categories/tree",
+    "/api/v1/permissions/hierarchical-tree"
+  );
+};
+
+/**
+ * 获取只读的权限列表树，用于展示
+ */
+export const getReadOnlyPermissionTree = () => {
+  return http.request<ApiResponse<ReadOnlyPermissionTreeNode[]>>(
+    "get",
+    "/api/v1/permissions/tree"
+  );
+};
+
+// 权限组管理API
+export const getPermissionGroups = (params?: {
+  page?: number;
+  page_size?: number;
+  q?: string;
+}) => {
+  return http.request<ApiResponse<PaginatedResponse<PermissionGroup>>>(
+    "get",
+    "/api/v1/permission-groups",
     { params }
   );
 };
 
-// 获取权限树（基于最新API文档）
-export const getPermissionTree = () => {
-  return http.request<ApiResponse<PermissionTreeResponse>>(
+export const createPermissionGroup = (data: CreatePermissionGroupRequest) => {
+  return http.request<ApiResponse<PermissionGroup>>(
+    "post",
+    "/api/v1/permission-groups",
+    { data }
+  );
+};
+
+export const getPermissionGroup = (id: string) => {
+  return http.request<ApiResponse<PermissionGroupDetail>>(
     "get",
-    "/api/v1/permissions/defined/hierarchical-tree"
+    `/api/v1/permission-groups/${id}`
+  );
+};
+
+export const updatePermissionGroup = (
+  id: string,
+  data: UpdatePermissionGroupRequest
+) => {
+  return http.request<ApiResponse<PermissionGroup>>(
+    "put",
+    `/api/v1/permission-groups/${id}`,
+    { data }
+  );
+};
+
+export const deletePermissionGroup = (id: string) => {
+  return http.request<ApiResponse<null>>(
+    "delete",
+    `/api/v1/permission-groups/${id}`
+  );
+};
+
+export const getPermissionGroupPermissions = (groupId: string) => {
+  return http.request<ApiResponse<string[]>>(
+    "get",
+    `/api/v1/permission-groups/${groupId}/permissions`
+  );
+};
+
+export const setPermissionGroupPermissions = (
+  groupId: string,
+  data: { permission_ids: string[] }
+) => {
+  return http.request<ApiResponse<null>>(
+    "post",
+    `/api/v1/permission-groups/${groupId}/permissions`,
+    { data }
   );
 };

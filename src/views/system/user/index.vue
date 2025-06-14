@@ -68,7 +68,7 @@
         <pure-table
           ref="tableRef"
           adaptive
-          :adaptiveConfig="{ offsetBottom: 45 }"
+          :adaptiveConfig="{ offsetBottom: 108 }"
           align-whole="center"
           row-key="id"
           showOverflowTooltip
@@ -77,11 +77,15 @@
           :size="size"
           :data="dataList"
           :columns="dynamicColumns"
+          :pagination="pagination"
+          :paginationSmall="size === 'small'"
           :header-cell-style="{
             background: 'var(--el-fill-color-light)',
             color: 'var(--el-text-color-primary)'
           }"
           @selection-change="handleSelectionChange"
+          @page-size-change="handleSizeChange"
+          @page-current-change="handleCurrentChange"
         >
           <template #operation="{ row }">
             <el-button
@@ -188,7 +192,10 @@ const {
   openPasswordDialog,
   openAssignRoleDialog,
   handleDelete,
-  handleBatchDelete
+  handleBatchDelete,
+  pagination,
+  handleSizeChange,
+  handleCurrentChange
 } = useUser();
 
 const onFullscreen = () => {
