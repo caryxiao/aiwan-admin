@@ -312,6 +312,19 @@ export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
         const curData = options.props
           .formData as PermissionGroupConfigFormProps;
 
+        // 检查是否为超级管理员
+        const isSuperAdmin =
+          curData.role.role_name === "super_admin" ||
+          curData.role.role_name === "超级管理员" ||
+          curData.permissionGroupOptions.some(group => group.group_key === "*");
+
+        if (isSuperAdmin) {
+          // 对于超级管理员，直接关闭对话框
+          message("超级管理员权限配置为只读模式", { type: "info" });
+          done();
+          return;
+        }
+
         if (!permissionFormRef) {
           message("权限组配置组件未找到", { type: "error" });
           return;
@@ -322,46 +335,90 @@ export const useRoleManagement = (_tableRef?: Ref<TableInstance>) => {
           const selectedPermissionGroupIds =
             permissionFormRef.getCheckedPermissionGroupIds();
 
-          // 显示保存确认
-          const selectedCount = selectedPermissionGroupIds.length;
+          // 检查是否包含全权限组
+          const hasAllPermissions = selectedPermissionGroupIds.some(id => {
+            const group = curData.permissionGroupOptions.find(g => g.id === id);
+            return group && group.group_key === "*";
+          });
 
-          ElMessageBox.confirm(
-            `确认为角色 "${curData.role.display_name}" 分配 ${selectedCount} 个权限组吗？`,
-            "权限组配置确认",
-            {
-              type: "warning",
-              confirmButtonText: "确认保存",
-              cancelButtonText: "取消",
-              showCancelButton: true
-            }
-          )
-            .then(() => {
-              // 保存权限组配置
-              setRolePermissionGroups(curData.role.id, {
-                permission_group_ids: selectedPermissionGroupIds
+          if (hasAllPermissions) {
+            ElMessageBox.confirm(
+              `您正在为角色 "${curData.role.display_name}" 分配全部权限，这将使该角色成为超级管理员。确认继续吗？`,
+              "超级管理员权限确认",
+              {
+                type: "warning",
+                confirmButtonText: "确认分配",
+                cancelButtonText: "取消",
+                showCancelButton: true,
+                dangerouslyUseHTMLString: true,
+                message: `
+                  <div>
+                    <p><strong>警告：</strong>此操作将赋予角色系统最高权限！</p>
+                    <p>超级管理员将拥有：</p>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                      <li>完整的系统访问权限</li>
+                      <li>所有用户和角色管理权限</li>
+                      <li>系统配置和维护权限</li>
+                    </ul>
+                  </div>
+                `
+              }
+            )
+              .then(() => {
+                savePermissionGroups(curData, selectedPermissionGroupIds, done);
               })
-                .then(() => {
-                  message(
-                    `权限组配置保存成功！已为角色分配 ${selectedCount} 个权限组`,
-                    { type: "success" }
-                  );
-                  done();
-                })
-                .catch(error => {
-                  console.error("保存权限组配置失败:", error);
-                  message("保存权限组配置失败，请稍后重试", { type: "error" });
-                });
-            })
-            .catch(() => {
-              // 用户取消保存
-              console.log("用户取消保存权限组配置");
-            });
+              .catch(() => {
+                console.log("用户取消分配超级管理员权限");
+              });
+          } else {
+            // 普通权限组保存确认
+            const selectedCount = selectedPermissionGroupIds.length;
+            ElMessageBox.confirm(
+              `确认为角色 "${curData.role.display_name}" 分配 ${selectedCount} 个权限组吗？`,
+              "权限组配置确认",
+              {
+                type: "warning",
+                confirmButtonText: "确认保存",
+                cancelButtonText: "取消",
+                showCancelButton: true
+              }
+            )
+              .then(() => {
+                savePermissionGroups(curData, selectedPermissionGroupIds, done);
+              })
+              .catch(() => {
+                console.log("用户取消保存权限组配置");
+              });
+          }
         } catch (error) {
           console.error("保存权限组配置失败:", error);
           message("保存权限组配置失败，请稍后重试", { type: "error" });
         }
       }
     });
+
+    // 抽取保存权限组的逻辑
+    function savePermissionGroups(
+      curData: PermissionGroupConfigFormProps,
+      selectedPermissionGroupIds: string[],
+      done: Function
+    ) {
+      setRolePermissionGroups(curData.role.id, {
+        permission_group_ids: selectedPermissionGroupIds
+      })
+        .then(() => {
+          const selectedCount = selectedPermissionGroupIds.length;
+          message(
+            `权限组配置保存成功！已为角色分配 ${selectedCount} 个权限组`,
+            { type: "success" }
+          );
+          done();
+        })
+        .catch(error => {
+          console.error("保存权限组配置失败:", error);
+          message("保存权限组配置失败，请稍后重试", { type: "error" });
+        });
+    }
 
     // 异步加载权限组数据
     loadPermissionGroupData(formData);

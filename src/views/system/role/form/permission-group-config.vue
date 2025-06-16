@@ -36,6 +36,16 @@
           class="section-stats"
         >
           <el-tag
+            v-if="isSuperAdmin"
+            type="warning"
+            effect="light"
+            size="small"
+          >
+            <el-icon><Star /></el-icon>
+            超级管理员
+          </el-tag>
+          <el-tag
+            v-else
             :type="checkedPermissionGroupIds.length > 0 ? 'success' : 'info'"
             effect="light"
             size="small"
@@ -46,11 +56,27 @@
         </div>
       </div>
 
+      <!-- 超级管理员提示 -->
+      <el-alert
+        v-if="isSuperAdmin"
+        title="该角色为超级管理员，拥有所有权限"
+        type="warning"
+        :closable="false"
+        show-icon
+        class="super-admin-alert"
+      >
+        <template #default>
+          <p>超级管理员角色具有系统的最高权限，无需单独配置权限组。</p>
+          <p>如需修改权限，请联系系统管理员或使用其他角色。</p>
+        </template>
+      </el-alert>
+
       <!-- 搜索和操作工具栏 -->
       <div
         v-if="
           !formData.loadingPermissionGroups &&
-          filteredPermissionGroups.length > 0
+          filteredPermissionGroups.length > 0 &&
+          !isSuperAdmin
         "
         class="action-bar"
       >
@@ -96,7 +122,8 @@
         <div
           v-if="
             !formData.loadingPermissionGroups &&
-            filteredPermissionGroups.length === 0
+            filteredPermissionGroups.length === 0 &&
+            !isSuperAdmin
           "
           class="empty-container"
         >
@@ -121,21 +148,57 @@
           </el-empty>
         </div>
 
-        <!-- 权限组网格 -->
+        <!-- 超级管理员权限组显示 -->
+        <div v-else-if="isSuperAdmin" class="super-admin-permissions">
+          <div class="super-admin-card">
+            <div class="super-admin-icon">
+              <el-icon size="48" color="var(--el-color-warning)">
+                <Star />
+              </el-icon>
+            </div>
+            <div class="super-admin-content">
+              <h3 class="super-admin-title">拥有全部权限</h3>
+              <p class="super-admin-description">
+                超级管理员角色自动拥有系统中所有权限组的完整访问权限，包括：
+              </p>
+              <ul class="super-admin-features">
+                <li>用户管理</li>
+                <li>角色管理</li>
+                <li>权限管理</li>
+                <li>系统配置</li>
+                <li>数据管理</li>
+                <li>所有其他系统功能</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 普通权限组网格 -->
         <div v-else class="permission-grid">
           <div
             v-for="group in filteredPermissionGroups"
             :key="group.id"
             :class="[
               'permission-card',
-              { 'is-selected': checkedPermissionGroupIds.includes(group.id) }
+              {
+                'is-selected': checkedPermissionGroupIds.includes(group.id),
+                'is-super-group': group.group_key === '*'
+              }
             ]"
-            @click="toggleGroup(group.id)"
+            @click="!isSuperAdmin && toggleGroup(group.id)"
           >
+            <!-- 超级权限组特殊标识 -->
+            <div v-if="group.group_key === '*'" class="super-group-indicator">
+              <el-icon size="16" color="var(--el-color-warning)">
+                <Star />
+              </el-icon>
+            </div>
+
             <!-- 选择状态指示器 -->
             <div class="card-checkbox">
               <el-checkbox
                 :model-value="checkedPermissionGroupIds.includes(group.id)"
+                :disabled="isSuperAdmin || group.group_key === '*'"
                 size="small"
                 @change="toggleGroup(group.id)"
                 @click.stop
@@ -145,11 +208,15 @@
             <!-- 权限组内容 -->
             <div class="card-content">
               <div class="group-header">
-                <h5 class="group-title">{{ group.display_name }}</h5>
+                <h5 class="group-title">
+                  {{
+                    group.group_key === "*" ? "全部权限" : group.display_name
+                  }}
+                </h5>
                 <div class="group-meta">
                   <el-tag
-                    type="info"
-                    effect="plain"
+                    :type="group.group_key === '*' ? 'warning' : 'info'"
+                    :effect="group.group_key === '*' ? 'light' : 'plain'"
                     size="small"
                     class="group-tag"
                   >
@@ -167,7 +234,10 @@
                 </div>
               </div>
 
-              <p v-if="group.description" class="group-description">
+              <p v-if="group.group_key === '*'" class="group-description super">
+                拥有系统中所有功能的完整访问权限，包括用户管理、权限配置、系统设置等所有操作。
+              </p>
+              <p v-else-if="group.description" class="group-description">
                 {{ group.description }}
               </p>
               <p v-else class="group-description placeholder">暂无描述信息</p>
@@ -193,7 +263,8 @@ import {
   RefreshLeft,
   Select,
   FolderOpened,
-  Check
+  Check,
+  Star
 } from "@element-plus/icons-vue";
 import type { PermissionGroupConfigFormProps } from "../utils/types";
 
@@ -270,11 +341,36 @@ watch(
 defineExpose({
   getCheckedPermissionGroupIds: () => checkedPermissionGroupIds.value
 });
+
+// 超级管理员检测逻辑
+const isSuperAdmin = computed(() => {
+  // 检查角色名称是否为超级管理员
+  if (
+    props.formData.role.role_name === "super_admin" ||
+    props.formData.role.role_name === "超级管理员"
+  ) {
+    return true;
+  }
+
+  // 检查是否拥有 group_key 为 "*" 的权限组
+  const hasAllPermissions = props.formData.permissionGroupOptions.some(
+    group => group.group_key === "*"
+  );
+
+  // 检查当前角色是否被分配了全权限组
+  const hasAllPermissionsAssigned =
+    props.formData.checkedPermissionGroupIds.some(id => {
+      const group = props.formData.permissionGroupOptions.find(
+        g => g.id === id
+      );
+      return group && group.group_key === "*";
+    });
+
+  return hasAllPermissions && hasAllPermissionsAssigned;
+});
 </script>
 
 <style scoped>
-
-
 /* 响应式设计 */
 @media (width <= 768px) {
   .permission-group-config {
@@ -649,5 +745,127 @@ defineExpose({
 
 :deep(.el-button + .el-button) {
   margin-left: 0;
+}
+
+/* 超级管理员样式 */
+.super-admin-alert {
+  margin: 16px 20px;
+}
+
+.super-admin-permissions {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.super-admin-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 600px;
+  padding: 32px;
+  margin: 0 auto;
+  background: linear-gradient(
+    135deg,
+    var(--el-color-warning-light-9),
+    var(--el-bg-color)
+  );
+  border: 2px solid var(--el-color-warning-light-7);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgb(230 162 60 / 15%);
+}
+
+.super-admin-icon {
+  padding: 16px;
+  margin-bottom: 24px;
+  background: var(--el-color-warning-light-8);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgb(230 162 60 / 20%);
+}
+
+.super-admin-content {
+  text-align: center;
+}
+
+.super-admin-title {
+  margin: 0 0 16px;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--el-color-warning-dark-2);
+}
+
+.super-admin-description {
+  margin: 0 0 20px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--el-text-color-regular);
+}
+
+.super-admin-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  list-style: none;
+}
+
+.super-admin-features li {
+  position: relative;
+  padding-left: 20px;
+  font-size: 14px;
+  color: var(--el-text-color-primary);
+}
+
+.super-admin-features li::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  content: "";
+  background: var(--el-color-warning);
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+
+/* 超级权限组特殊样式 */
+.permission-card.is-super-group {
+  background: linear-gradient(
+    135deg,
+    var(--el-color-warning-light-9),
+    var(--el-bg-color)
+  );
+  border-color: var(--el-color-warning-light-5);
+}
+
+.permission-card.is-super-group:hover {
+  border-color: var(--el-color-warning-light-3);
+  box-shadow: 0 4px 16px rgb(230 162 60 / 20%);
+}
+
+.super-group-indicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--el-color-warning);
+  border: 2px solid var(--el-bg-color);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgb(230 162 60 / 30%);
+}
+
+.group-description.super {
+  padding: 8px 12px;
+  font-weight: 500;
+  color: var(--el-color-warning-dark-2);
+  background: var(--el-color-warning-light-9);
+  border-left: 3px solid var(--el-color-warning);
+  border-radius: 6px;
 }
 </style>
